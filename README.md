@@ -1,4 +1,3 @@
-
 # 🎓 QuizLab: Piattaforma Quiz/Flashcard Zero-Trust
 
 ![Stato Progetto](https://img.shields.io/badge/Stato-In_Sviluppo-orange)
