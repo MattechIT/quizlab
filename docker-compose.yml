@@ -143,3 +143,43 @@ services:
       - mesh-net
     volumes:
       - postgres_app_data:/var/lib/postgresql/data
+      - ./config/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  api-content:
+    build: ./api-content
+    container_name: quiz-api-content
+    restart: unless-stopped
+    environment:
+      - DB_HOST=postgres-app
+      - DB_USER=quizlab_user
+      - DB_PASSWORD=${DB_APP_PASSWORD}
+      - DB_NAME=quizlab
+      - STATS_SERVICE_URL=http://api-stats:3000/api/v1/stats
+      - PORT=3000
+    networks:
+      - gateway-net
+      - mesh-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api-content.rule=Host(`quizlab.techmatrix.it`) && PathPrefix(`/api/`)"
+      - "traefik.http.routers.api-content.entrypoints=web"
+      - "traefik.http.routers.api-content.middlewares=quiz-auth@file" # Applica il middleware di Forward-Auth
+      - "traefik.http.services.api-content.loadbalancer.server.port=3000"
+    depends_on:
+      - postgres-app
+
+  api-stats:
+    build: ./api-stats
+    container_name: quiz-api-stats
+    restart: unless-stopped
+    environment:
+      - DB_HOST=postgres-app
+      - DB_USER=quizlab_user
+      - DB_PASSWORD=${DB_APP_PASSWORD}
+      - DB_NAME=quizlab
+      - PORT=3000
+    networks:
+      - mesh-net
+    # Totalmente privato: non ha etichette Traefik
+    depends_on:
+      - postgres-app
