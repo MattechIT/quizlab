@@ -1,0 +1,24 @@
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+log:
+  level: INFO
+  format: common
+
+api:
+  dashboard: true
+  insecure: true # Dashboard esposta sulla porta 8080 interna
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false # Espone solo i servizi dotati di label 'traefik.enable=true'
+    network: gateway-net    # Risolve gli IP all'interno di questa rete
+  file:
+    filename: "/etc/traefik/dynamic.yml"
+    watch: true             # Ricarica a caldo le modifiche senza riavvio
