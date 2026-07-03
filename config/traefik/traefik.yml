@@ -13,8 +13,6 @@ api:
 entryPoints:
   web:
     address: ":80"
-    forwardedHeaders:
-      insecure: true
 
 providers:
   docker:
