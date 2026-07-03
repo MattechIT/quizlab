@@ -28,8 +28,8 @@ Il traffico segue un modello rigoroso in cui nessuna porta applicativa è espost
 | **Identity Provider** | **Keycloak (Quarkus)** | Gestione SSO, autenticazione OIDC e rilascio Token JWT. |
 | **Security Proxy** | **OAuth2-Proxy** | Valida le sessioni e funge da middleware di Forward-Auth. |
 | **Database** | **PostgreSQL 16** | Storage relazionale isolato per Keycloak e dati utente. |
-| **Backend API** | **Node.js / Python** | Microservizi CRUD leggeri (API 1: Contenuti, API 2: Statistiche). |
-| **Service Mesh** | **Traefik Mesh / Linkerd** | Gestione mTLS per la comunicazione intra-servizio. |
+| **Backend API** | **Node.js (Express)** | Microservizi CRUD leggeri (API 1: Contenuti, API 2: Statistiche). |
+| **Service Mesh** | **Envoy proxy (Static Sidecars)** | Gestione mTLS e cifratura L7 per la comunicazione intra-servizio. |
 
 ---
 
@@ -38,23 +38,29 @@ Il traffico segue un modello rigoroso in cui nessuna porta applicativa è espost
 Il repository segue un approccio *monorepo* per facilitare il deploy dello stack completo tramite Docker Compose.
 
 ```text
-quizlab/
-├── 📁 api-content/           # Sorgenti API 1: Gestione Flashcard e Quiz
-│   ├── Dockerfile
-│   └── src/
-├── 📁 api-stats/             # Sorgenti API 2: Punteggi e Statistiche
-│   ├── Dockerfile
-│   └── src/
-├── 📁 landing-page/          # Front-end pubblico (No-Auth DMZ)
+project/
+├── .env.example
+├── docker-compose.yml
+├── config/
+│   ├── traefik/
+│   │   ├── traefik.yml               # Configurazione statica Traefik
+│   │   └── dynamic.yml               # Configurazione dinamica (Middleware & Router)
+│   └── keycloak/
+│       └── realm-export.json         # Export automatico del Realm per avvio rapido
+├── landing-page/                     # Front-end pubblico (No-Auth DMZ)
 │   ├── Dockerfile
 │   └── html/
-├── 📁 config/                # Configurazioni dinamiche
-│   ├── traefik.yml
-│   └── realm-export.json     # Backup del Realm Keycloak
-├── docker-compose.yml        # Orchestrazione dello stack
+├── api-content/                      # Sorgenti API 1: Gestione Flashcard e Quiz
+│   ├── Dockerfile
+│   └── src/
+├── api-stats/                        # Sorgenti API 2: Punteggi e Statistiche
+│   ├── Dockerfile
+│   └── src/
+├── mesh/                             # File per il Service Mesh (Envoy)
+│   ├── envoy-content.yaml
+│   └── envoy-stats.yaml
 └── README.md
-
-```
+````
 
 ---
 
@@ -72,10 +78,10 @@ Inizializzare il database e l'Identity Provider prima dei microservizi:
 
 ```bash
 # Avvia solo il database e Keycloak
-docker compose up -d quiz-postgres quiz-keycloak
+docker compose up -d postgres-auth keycloak
 
 # Controlla i log per verificare l'avvio di Quarkus
-docker compose logs -f quiz-keycloak
+docker compose logs -f keycloak
 
 ```
 
