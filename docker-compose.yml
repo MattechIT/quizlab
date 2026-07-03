@@ -54,6 +54,8 @@ services:
     networks:
       - auth-net
       - gateway-net
+    ports:
+      - "8080:8080" # Temporaneo
     volumes:
       - ./config/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
     labels:

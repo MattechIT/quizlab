@@ -1,0 +1,46 @@
+{
+  "id": "QuizLab",
+  "realm": "QuizLab",
+  "enabled": true,
+  "users": [
+    {
+      "username": "studente1",
+      "enabled": true,
+      "email": "studente1@techmatrix.it",
+      "firstName": "Studente",
+      "lastName": "Uno",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "studente1",
+          "temporary": false
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "oauth2-proxy-client",
+      "name": "OAuth2 Proxy Client",
+      "enabled": true,
+      "secret": "OAuth2ProxyClientSecretKey123!",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "https://quizlab.techmatrix.it/oauth2/callback"
+      ],
+      "webOrigins": [
+        "https://quizlab.techmatrix.it"
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "email"
+      ]
+    }
+  ]
+}
