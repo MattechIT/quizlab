@@ -108,3 +108,16 @@ services:
       - "traefik.http.services.oauth2.loadbalancer.server.port=4180"
     depends_on:
       - keycloak
+
+  landing-page:
+    image: nginx:alpine
+    container_name: quiz-landing
+    restart: unless-stopped
+    networks:
+      - gateway-net
+    volumes:
+      - ./landing-page/html:/usr/share/nginx/html:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.landing.rule=Host(`quizlab.techmatrix.it`) && (Path(`/`) || PathPrefix(`/static/`))"
+      - "traefik.http.routers.landing.entrypoints=web"
