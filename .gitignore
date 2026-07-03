@@ -1,0 +1,23 @@
+# Segreti e Credenziali
+.env
+
+# Dipendenze Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Certificati della Mesh (devono essere generati localmente sull'host)
+mesh/certificates/*
+!mesh/certificates/.gitkeep
+
+# File di configurazione dell'IDE e di sistema
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
