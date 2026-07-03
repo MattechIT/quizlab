@@ -24,7 +24,7 @@ services:
   # STRATO 1: GATEWAY & REVERSE PROXY
   # ==========================================
   traefik:
-    image: traefik:v3.0
+    image: traefik:latest
     container_name: quiz-traefik
     restart: unless-stopped
     security_opt:
