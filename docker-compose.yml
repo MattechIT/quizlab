@@ -21,6 +21,7 @@ networks:
 
 volumes:
   postgres_auth_data:
+  postgres_app_data:
 
 services:
   # ==========================================
@@ -126,3 +127,19 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.landing.rule=Host(`quizlab.techmatrix.it`) && (Path(`/`) || PathPrefix(`/static/`))"
       - "traefik.http.routers.landing.entrypoints=web"
+
+  # ==========================================
+  # STRATO 3: BUSINESS LOGIC & STORAGE (BACKEND PRIVATE)
+  # ==========================================
+  postgres-app:
+    image: postgres:16-alpine
+    container_name: quiz-postgres-app
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: quizlab
+      POSTGRES_USER: quizlab_user
+      POSTGRES_PASSWORD: ${DB_APP_PASSWORD}
+    networks:
+      - mesh-net
+    volumes:
+      - postgres_app_data:/var/lib/postgresql/data
