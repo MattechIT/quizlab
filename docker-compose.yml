@@ -34,8 +34,6 @@ services:
     ports:
       - "80:80"        # Porta pubblica di ingresso all'LXC (smistata da Caddy)
       - "8080:8080"    # Dashboard di Traefik (opzionale, solo interna)
-    environment:
-      - DOCKER_API_VERSION=1.40
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./config/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
