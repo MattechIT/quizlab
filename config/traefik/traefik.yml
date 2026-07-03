@@ -19,7 +19,6 @@ providers:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false # Espone solo i servizi dotati di label 'traefik.enable=true'
     network: gateway-net    # Risolve gli IP all'interno di questa rete
-    apiVersion: "1.40"      # Forza la versione API supportata dall'host dell'LXC
   file:
     filename: "/etc/traefik/dynamic.yml"
     watch: true             # Ricarica a caldo le modifiche senza riavvio
