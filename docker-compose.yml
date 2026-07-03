@@ -1,15 +1,18 @@
 networks:
   gateway-net:
+    name: gateway-net
     driver: bridge
     ipam:
       config:
         - subnet: 172.20.0.0/24
   auth-net:
+    name: auth-net
     driver: bridge
     ipam:
       config:
         - subnet: 172.21.0.0/24
   mesh-net:
+    name: mesh-net
     driver: bridge
     internal: true # Isolata L3
     ipam:
