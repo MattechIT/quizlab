@@ -101,6 +101,77 @@ app.get('/api/v1/quiz/:id/questions', validateIdentity, async (req, res) => {
   }
 });
 
+// Endpoint per creare un nuovo modulo Quiz (Protetto)
+app.post('/api/v1/quiz', validateIdentity, async (req, res) => {
+  const { title, difficulty, description, imageUrl } = req.body;
+  const username = req.user.username;
+
+  if (!title || !difficulty) {
+    return res.status(400).json({ error: "Bad Request", message: "Campi obbligatori: title, difficulty" });
+  }
+
+  try {
+    const result = await pool.query(
+      'INSERT INTO quizzes (title, questions, difficulty, created_by, description, image_url) VALUES ($1, 0, $2, $3, $4, $5) RETURNING *',
+      [title, difficulty, username, description || null, imageUrl || null]
+    );
+
+    res.status(201).json({
+      message: "Quiz creato con successo!",
+      data: result.rows[0]
+    });
+  } catch (err) {
+    console.error("[ERROR] Errore nella creazione del quiz:", err.message);
+    res.status(500).json({ error: "Internal Server Error", message: "Impossibile salvare il quiz nel database." });
+  }
+});
+
+// Endpoint per aggiungere una domanda a un quiz esistente (Protetto)
+app.post('/api/v1/quiz/:id/questions', validateIdentity, async (req, res) => {
+  const quizId = parseInt(req.params.id);
+  const { questionText, options, correctOption, explanation, imageUrl } = req.body;
+  const username = req.user.username;
+
+  if (isNaN(quizId)) {
+    return res.status(400).json({ error: "Bad Request", message: "ID quiz non valido" });
+  }
+
+  if (!questionText || !options || correctOption === undefined) {
+    return res.status(400).json({ error: "Bad Request", message: "Campi obbligatori: questionText, options, correctOption" });
+  }
+
+  try {
+    // Controllo di proprietà: l'utente può aggiungere domande solo ai propri quiz personali
+    const quizCheck = await pool.query('SELECT created_by FROM quizzes WHERE id = $1', [quizId]);
+    
+    if (quizCheck.rows.length === 0) {
+      return res.status(404).json({ error: "Not Found", message: "Quiz non trovato." });
+    }
+
+    if (quizCheck.rows[0].created_by !== username) {
+      return res.status(403).json({ error: "Forbidden", message: "Non sei autorizzato ad aggiungere domande a questo quiz." });
+    }
+
+    // Inserisce la domanda
+    const result = await pool.query(
+      'INSERT INTO questions (quiz_id, question_text, options, correct_option, explanation, image_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [quizId, questionText, JSON.stringify(options), correctOption, explanation || null, imageUrl || null]
+    );
+
+    // Incrementa il conteggio delle domande nella tabella dei quiz
+    await pool.query('UPDATE quizzes SET questions = questions + 1 WHERE id = $1', [quizId]);
+
+    res.status(201).json({
+      message: "Domanda aggiunta con successo!",
+      data: result.rows[0]
+    });
+  } catch (err) {
+    console.error("[ERROR] Errore nell'aggiunta della domanda:", err.message);
+    res.status(500).json({ error: "Internal Server Error", message: "Impossibile salvare la domanda nel database." });
+  }
+});
+
+
 // Endpoint Flashcards (Protetto)
 app.get('/api/v1/flashcards', validateIdentity, async (req, res) => {
   try {
@@ -126,6 +197,31 @@ app.get('/api/v1/flashcards', validateIdentity, async (req, res) => {
       message: `Ecco le tue flashcard di studio, ${req.user.username}. (Dati mock - database offline o non migrato)`,
       data: mockFlashcards
     });
+  }
+});
+
+// Endpoint per creare una nuova Flashcard (Protetto)
+app.post('/api/v1/flashcards', validateIdentity, async (req, res) => {
+  const { category, term, definition, imageUrl } = req.body;
+  const username = req.user.username;
+
+  if (!category || !term || !definition) {
+    return res.status(400).json({ error: "Bad Request", message: "Campi obbligatori: category, term, definition" });
+  }
+
+  try {
+    const result = await pool.query(
+      'INSERT INTO flashcards (category, term, definition, created_by, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [category, term, definition, username, imageUrl || null]
+    );
+
+    res.status(201).json({
+      message: "Flashcard creata con successo!",
+      data: result.rows[0]
+    });
+  } catch (err) {
+    console.error("[ERROR] Errore nella creazione della flashcard:", err.message);
+    res.status(500).json({ error: "Internal Server Error", message: "Impossibile salvare la flashcard nel database." });
   }
 });
 
