@@ -120,17 +120,20 @@ services:
       - keycloak
 
   landing-page:
-    image: nginx:alpine
+    build: ./landing-page
     container_name: quiz-landing
     restart: unless-stopped
     networks:
       - gateway-net
-    volumes:
-      - ./landing-page/html:/usr/share/nginx/html:ro
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.landing.rule=Host(`quizlab.techmatrix.it`) && (Path(`/`) || PathPrefix(`/static/`))"
+      - "traefik.http.routers.landing.rule=Host(`quizlab.techmatrix.it`)"
+      - "traefik.http.routers.landing.priority=1" # Priorità minima di fallback per catturare il routing client-side (SPA)
       - "traefik.http.routers.landing.entrypoints=web"
+    deploy:
+      resources:
+        limits:
+          memory: 32M # Nginx statico consuma pochissima RAM in runtime
 
   # ==========================================
   # STRATO 3: BUSINESS LOGIC & STORAGE (BACKEND PRIVATE)
