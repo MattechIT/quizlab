@@ -119,6 +119,7 @@ export default function App() {
             quizzes={quizzes} 
             onSelectQuiz={handleSelectQuiz} 
             onViewFlashcards={() => setCurrentPage('flashcards')} 
+            onRefresh={checkAuth}
           />
         );
 
