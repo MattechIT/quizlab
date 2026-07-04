@@ -68,6 +68,36 @@ app.get('/api/v1/quiz', validateIdentity, async (req, res) => {
   }
 });
 
+// Endpoint Domande del Quiz (Protetto)
+app.get('/api/v1/quiz/:id/questions', validateIdentity, async (req, res) => {
+  const quizId = parseInt(req.params.id);
+  if (isNaN(quizId)) {
+    return res.status(400).json({ error: "Bad Request", message: "ID quiz non valido" });
+  }
+
+  try {
+    const result = await pool.query(
+      'SELECT id, question_text, options, correct_option FROM questions WHERE quiz_id = $1 ORDER BY id ASC',
+      [quizId]
+    );
+
+    res.json({
+      quizId,
+      questions: result.rows.map(row => ({
+        q: row.question_text,
+        options: row.options, // pg serializza automaticamente il tipo JSONB in array JS
+        correct: row.correct_option
+      }))
+    });
+  } catch (err) {
+    console.error("[ERROR] Errore nel caricamento delle domande dal DB:", err.message);
+    res.status(500).json({
+      error: "Internal Server Error",
+      message: "Impossibile recuperare le domande dal database per questo quiz."
+    });
+  }
+});
+
 // Endpoint Flashcards (Protetto)
 app.get('/api/v1/flashcards', validateIdentity, async (req, res) => {
   try {
