@@ -158,7 +158,7 @@ services:
       - DB_USER=quizlab_user
       - DB_PASSWORD=${DB_APP_PASSWORD}
       - DB_NAME=quizlab
-      - STATS_SERVICE_URL=http://api-stats:3000/api/v1/stats
+      - STATS_SERVICE_URL=http://127.0.0.1:5001/api/v1/stats # Convogliata su egress sidecar locale
       - PORT=3000
     networks:
       - gateway-net
@@ -187,3 +187,28 @@ services:
     # Totalmente privato: non ha etichette Traefik
     depends_on:
       - postgres-app
+
+  # ==========================================
+  # STRATO 4: SERVICE MESH (PROXIES SIDECARS ENVOY)
+  # ==========================================
+  sidecar-content:
+    image: envoyproxy/envoy:v1.28-latest
+    container_name: quiz-sidecar-content
+    restart: unless-stopped
+    network_mode: "service:api-content" # Condivide lo stack di rete dell'API Contenuti
+    volumes:
+      - ./mesh/envoy-content.yaml:/etc/envoy/envoy.yaml:ro
+      - ./mesh/certificates:/etc/envoy/certs:ro
+    depends_on:
+      - api-content
+
+  sidecar-stats:
+    image: envoyproxy/envoy:v1.28-latest
+    container_name: quiz-sidecar-stats
+    restart: unless-stopped
+    network_mode: "service:api-stats" # Condivide lo stack di rete dell'API Statistiche
+    volumes:
+      - ./mesh/envoy-stats.yaml:/etc/envoy/envoy.yaml:ro
+      - ./mesh/certificates:/etc/envoy/certs:ro
+    depends_on:
+      - api-stats

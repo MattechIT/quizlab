@@ -77,8 +77,8 @@ app.get('/api/v1/stats/:username', async (req, res) => {
   }
 });
 
-// Avvio del server
-app.listen(port, () => {
+// Avvio del server ristretto a localhost (accessibile solo dal sidecar Envoy)
+app.listen(port, '127.0.0.1', () => {
   console.log(`[INFO] Microservizio api-stats avviato sulla porta ${port}`);
   
   // Test di connessione al database (non bloccante)
