@@ -29,6 +29,7 @@ static_resources:
             name: envoy.transport_sockets.tls
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              require_client_certificate: true # Forza l'autenticazione mutua (mTLS)
               common_tls_context:
                 tls_certificates:
                   - certificate_chain:
@@ -38,7 +39,6 @@ static_resources:
                 validation_context:
                   trusted_ca:
                     filename: /etc/envoy/certs/ca.crt
-                  require_client_certificate: true # Forza l'autenticazione mutua (mTLS)
 
   clusters:
     - name: local_stats_cluster
