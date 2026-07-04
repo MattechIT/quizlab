@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   ArrowRight, 
   HelpCircle, 
@@ -6,12 +6,48 @@ import {
   Trophy, 
   Cpu, 
   Layers, 
-  Network 
+  Network,
+  Plus,
+  X,
+  Image as ImageIcon,
+  BookOpenCheck,
+  UserCheck
 } from 'lucide-react';
 
-export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards }) {
-  // Associa un'icona e una descrizione ad ogni quiz per arricchire il design visivo
-  const getQuizMetadata = (id) => {
+export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards, onRefresh }) {
+  // Stati per il controllo dei modali
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [selectedQuizIdForQuestion, setSelectedQuizIdForQuestion] = useState(null);
+
+  // Stati del form Creazione Quiz
+  const [newQuizTitle, setNewQuizTitle] = useState('');
+  const [newQuizDifficulty, setNewQuizDifficulty] = useState('Facile');
+  const [newQuizDescription, setNewQuizDescription] = useState('');
+  const [newQuizImageUrl, setNewQuizImageUrl] = useState('');
+
+  // Stati del form Aggiunta Domanda
+  const [questionText, setQuestionText] = useState('');
+  const [optA, setOptA] = useState('');
+  const [optB, setOptB] = useState('');
+  const [optC, setOptC] = useState('');
+  const [optD, setOptD] = useState('');
+  const [correctOption, setCorrectOption] = useState(0);
+  const [explanation, setExplanation] = useState('');
+  const [questionImageUrl, setQuestionImageUrl] = useState('');
+
+  // Stati di caricamento
+  const [submittingQuiz, setSubmittingQuiz] = useState(false);
+  const [submittingQuestion, setSubmittingQuestion] = useState(false);
+
+  const getQuizMetadata = (id, createdBy) => {
+    if (createdBy !== 'global') {
+      return {
+        icon: <BookOpenCheck size={24} style={{ color: 'var(--accent-hover)' }} />,
+        desc: "Modulo personalizzato creato da te. Aggiungi domande per esercitarti."
+      };
+    }
+    
     switch (id) {
       case 1:
         return {
@@ -49,9 +85,93 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards 
     }
   };
 
+  // Creazione Nuovo Quiz (POST)
+  const handleCreateQuiz = async (e) => {
+    e.preventDefault();
+    if (!newQuizTitle || !newQuizDifficulty) return;
+
+    try {
+      setSubmittingQuiz(true);
+      const response = await fetch('/api/v1/quiz', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: newQuizTitle,
+          difficulty: newQuizDifficulty,
+          description: newQuizDescription,
+          imageUrl: newQuizImageUrl
+        })
+      });
+
+      if (response.ok) {
+        setShowQuizModal(false);
+        // Resetta form
+        setNewQuizTitle('');
+        setNewQuizDescription('');
+        setNewQuizImageUrl('');
+        // Rinfresca la lista
+        if (onRefresh) onRefresh();
+      } else {
+        alert("Errore durante la creazione del quiz.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Errore di rete.");
+    } finally {
+      setSubmittingQuiz(false);
+    }
+  };
+
+  // Aggiunta Domanda al Quiz Personale (POST)
+  const handleCreateQuestion = async (e) => {
+    e.preventDefault();
+    if (!questionText || !optA || !optB || !optC || !optD) return;
+
+    try {
+      setSubmittingQuestion(true);
+      const response = await fetch(`/api/v1/quiz/${selectedQuizIdForQuestion}/questions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          questionText,
+          options: [optA, optB, optC, optD],
+          correctOption: parseInt(correctOption),
+          explanation,
+          imageUrl: questionImageUrl
+        })
+      });
+
+      if (response.ok) {
+        setShowQuestionModal(false);
+        // Resetta form
+        setQuestionText('');
+        setOptA('');
+        setOptB('');
+        setOptC('');
+        setOptD('');
+        setCorrectOption(0);
+        setExplanation('');
+        setQuestionImageUrl('');
+        // Rinfresca la lista
+        if (onRefresh) onRefresh();
+      } else {
+        alert("Errore nell'aggiunta della domanda.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Errore di rete.");
+    } finally {
+      setSubmittingQuestion(false);
+    }
+  };
+
   return (
     <div className="container animate-fade-in" style={{ paddingBottom: '40px' }}>
-      {/* BANNER DI PRESENTAZIONE */}
+      {/* BANNER PRINCIPALE */}
       <div className="card" style={{
         background: 'linear-gradient(135deg, #121212 0%, #1a0f30 100%)',
         borderColor: 'rgba(124, 58, 237, 0.15)',
@@ -64,20 +184,26 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards 
         gap: '24px'
       }}>
         <div style={{ flex: '1', minWidth: '300px' }}>
-          <h2 style={{ fontSize: '2rem', marginBottom: '12px' }}><span className="gradient-text">Pronto per il Test?</span></h2>
+          <h2 style={{ fontSize: '2rem', marginBottom: '12px' }}><span className="gradient-text">Area Didattica</span></h2>
           <p style={{ fontSize: '1.05rem', color: 'var(--text-secondary)', maxWidth: '600px' }}>
-            Seleziona uno dei moduli didattici qui sotto. Ogni quiz contiene domande a risposta multipla strutturate per preparare l'esame finale di laboratorio.
+            Seleziona un quiz d'esame oppure crea un percorso di test personalizzato. Puoi usare le flashcard per la memorizzazione dei termini chiave.
           </p>
         </div>
-        <button onClick={onViewFlashcards} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px' }}>
-          <BookOpen size={18} style={{ color: 'var(--accent-hover)' }} />
-          <span>Studia con le Flashcards</span>
-        </button>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <button onClick={() => setShowQuizModal(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Plus size={18} />
+            <span>Crea Quiz</span>
+          </button>
+          <button onClick={onViewFlashcards} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <BookOpen size={18} style={{ color: 'var(--accent-hover)' }} />
+            <span>Studio Flashcards</span>
+          </button>
+        </div>
       </div>
 
-      {/* GRIGLIA QUIZ */}
+      {/* SEZIONE QUIZ */}
       <h2 style={{ marginBottom: '24px', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <Trophy size={20} style={{ color: 'var(--accent)' }} /> Moduli di Esame
+        <Trophy size={20} style={{ color: 'var(--accent)' }} /> Elenco Quiz Disponibili
       </h2>
 
       <div style={{
@@ -86,54 +212,286 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards 
         gap: '24px'
       }}>
         {quizzes.map((quiz) => {
-          const meta = getQuizMetadata(quiz.id);
+          const meta = getQuizMetadata(quiz.id, quiz.created_by);
           const diffStyle = getDifficultyColor(quiz.difficulty);
+          const isGlobal = quiz.created_by === 'global';
           
           return (
-            <div key={quiz.id} className="card card-hover" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div key={quiz.id} className="card card-hover" style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              height: '100%',
+              backgroundImage: quiz.image_url ? `linear-gradient(to bottom, rgba(18, 18, 18, 0.8), #121212), url(${quiz.image_url})` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
                 <div style={{ padding: '8px', borderRadius: '8px', backgroundColor: '#18181b', border: '1px solid #27272a' }}>
                   {meta.icon}
                 </div>
-                <span style={{
-                  fontSize: '0.75rem',
-                  fontWeight: '600',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  padding: '4px 10px',
-                  borderRadius: '9999px',
-                  backgroundColor: diffStyle.bg,
-                  color: diffStyle.text,
-                  border: `1px solid ${diffStyle.border}`
-                }}>
-                  {quiz.difficulty}
-                </span>
+                
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {/* Badge per capire se è creato da sé o globale */}
+                  <span style={{
+                    fontSize: '0.65rem',
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    backgroundColor: isGlobal ? 'rgba(255, 255, 255, 0.05)' : 'rgba(124, 58, 237, 0.1)',
+                    color: isGlobal ? 'var(--text-secondary)' : 'var(--accent-hover)',
+                    border: isGlobal ? '1px solid var(--card-border)' : '1px solid rgba(124, 58, 237, 0.2)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    {!isGlobal && <UserCheck size={10} />}
+                    {isGlobal ? 'Globale' : 'Personale'}
+                  </span>
+                  
+                  <span style={{
+                    fontSize: '0.65rem',
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    backgroundColor: diffStyle.bg,
+                    color: diffStyle.text,
+                    border: `1px solid ${diffStyle.border}`
+                  }}>
+                    {quiz.difficulty}
+                  </span>
+                </div>
               </div>
 
               <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '8px', color: 'var(--text-primary)' }}>
                 {quiz.title}
               </h3>
               
-              <p style={{ fontSize: '0.9rem', marginBottom: '24px', flex: 1 }}>
-                {meta.desc}
+              <p style={{ fontSize: '0.9rem', marginBottom: '24px', flex: 1, color: 'var(--text-secondary)' }}>
+                {quiz.description || meta.desc}
               </p>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid #1f1f1f' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                   {quiz.questions} Domande
                 </span>
-                <button 
-                  onClick={() => onSelectQuiz(quiz.id)} 
-                  className="btn btn-primary" 
-                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
-                >
-                  Inizia Quiz <ArrowRight size={14} />
-                </button>
+                
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {/* Se il quiz è personale, permetti di aggiungere domande */}
+                  {!isGlobal && (
+                    <button 
+                      onClick={() => { setSelectedQuizIdForQuestion(quiz.id); setShowQuestionModal(true); }}
+                      className="btn btn-secondary" 
+                      style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      title="Aggiungi domanda a questo quiz"
+                    >
+                      <Plus size={14} /> Domanda
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => onSelectQuiz(quiz.id)} 
+                    disabled={quiz.questions === 0}
+                    className="btn btn-primary" 
+                    style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                    title={quiz.questions === 0 ? "Aggiungi almeno una domanda per avviare il quiz" : ""}
+                  >
+                    Avvia <ArrowRight size={14} />
+                  </button>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* ==========================================
+         MODALE CREAZIONE QUIZ
+         ========================================== */}
+      {showQuizModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px'
+        }}>
+          <div className="card animate-fade-in" style={{ maxWidth: '480px', width: '100%', padding: '28px', backgroundColor: '#121212', border: '1px solid var(--card-border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Crea Nuovo Quiz</h3>
+              <button onClick={() => setShowQuizModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateQuiz} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Titolo Quiz *</label>
+                <input 
+                  type="text" required value={newQuizTitle} onChange={(e) => setNewQuizTitle(e.target.value)}
+                  placeholder="Es. Docker Compose avanzato"
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Difficoltà *</label>
+                <select 
+                  value={newQuizDifficulty} onChange={(e) => setNewQuizDifficulty(e.target.value)}
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                >
+                  <option value="Facile">Facile</option>
+                  <option value="Medio">Medio</option>
+                  <option value="Difficile">Difficile</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Descrizione</label>
+                <textarea 
+                  value={newQuizDescription} onChange={(e) => setNewQuizDescription(e.target.value)}
+                  placeholder="Una breve spiegazione del modulo didattico..." rows={3}
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', resize: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <ImageIcon size={14} /> URL Immagine Copertina (Opzionale)
+                </label>
+                <input 
+                  type="url" value={newQuizImageUrl} onChange={(e) => setNewQuizImageUrl(e.target.value)}
+                  placeholder="https://esempio.it/immagine.jpg"
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'end', gap: '12px', marginTop: '12px' }}>
+                <button type="button" onClick={() => setShowQuizModal(false)} className="btn btn-secondary">Annulla</button>
+                <button type="submit" disabled={submittingQuiz} className="btn btn-primary">
+                  {submittingQuiz ? 'Salvataggio...' : 'Crea modulo'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+         MODALE INSERIMENTO DOMANDA
+         ========================================== */}
+      {showQuestionModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px'
+        }}>
+          <div className="card animate-fade-in" style={{ maxWidth: '540px', width: '100%', padding: '28px', backgroundColor: '#121212', border: '1px solid var(--card-border)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Aggiungi Domanda</h3>
+              <button onClick={() => setShowQuestionModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateQuestion} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Testo della Domanda *</label>
+                <textarea 
+                  required value={questionText} onChange={(e) => setQuestionText(e.target.value)}
+                  placeholder="Es. Qual è il comando per avviare i container in background?" rows={2}
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', resize: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                />
+              </div>
+
+              {/* OPZIONI */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Opzioni di Risposta *</label>
+                <input 
+                  type="text" required value={optA} onChange={(e) => setOptA(e.target.value)} placeholder="Opzione A"
+                  style={{ backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '8px 12px', color: '#fff', fontSize: '0.9rem', outline: 'none' }}
+                />
+                <input 
+                  type="text" required value={optB} onChange={(e) => setOptB(e.target.value)} placeholder="Opzione B"
+                  style={{ backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '8px 12px', color: '#fff', fontSize: '0.9rem', outline: 'none' }}
+                />
+                <input 
+                  type="text" required value={optC} onChange={(e) => setOptC(e.target.value)} placeholder="Opzione C"
+                  style={{ backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '8px 12px', color: '#fff', fontSize: '0.9rem', outline: 'none' }}
+                />
+                <input 
+                  type="text" required value={optD} onChange={(e) => setOptD(e.target.value)} placeholder="Opzione D"
+                  style={{ backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '8px 12px', color: '#fff', fontSize: '0.9rem', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Risposta Corretta *</label>
+                <select 
+                  value={correctOption} onChange={(e) => setCorrectOption(e.target.value)}
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                >
+                  <option value={0}>Opzione A</option>
+                  <option value={1}>Opzione B</option>
+                  <option value={2}>Opzione C</option>
+                  <option value={3}>Opzione D</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Spiegazione Teorica (Mostrata a fine quiz)</label>
+                <textarea 
+                  value={explanation} onChange={(e) => setExplanation(e.target.value)}
+                  placeholder="Es. Il flag -d permette l'esecuzione del container in modalità detached (sfondo)..." rows={2}
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', resize: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <ImageIcon size={14} /> URL Immagine per la Domanda (Opzionale)
+                </label>
+                <input 
+                  type="url" value={questionImageUrl} onChange={(e) => setQuestionImageUrl(e.target.value)}
+                  placeholder="https://esempio.it/diagramma.png"
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'end', gap: '12px', marginTop: '8px' }}>
+                <button type="button" onClick={() => setShowQuestionModal(false)} className="btn btn-secondary">Annulla</button>
+                <button type="submit" disabled={submittingQuestion} className="btn btn-primary">
+                  {submittingQuestion ? 'Salvataggio...' : 'Aggiungi domanda'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
