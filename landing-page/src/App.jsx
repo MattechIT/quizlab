@@ -215,7 +215,7 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', gap: '16px' }}>
             <span>Stato Mesh: <strong style={{ color: 'var(--success)' }}>mTLS Attivo</strong></span>
-            <span>Gateway: <strong>Traefik + Caddy</strong></span>
+            <span>Gateway: <strong>Traefik + Cloudflare</strong></span>
           </div>
         </div>
       </footer>
