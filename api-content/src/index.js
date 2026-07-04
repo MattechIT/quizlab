@@ -43,8 +43,11 @@ app.use(express.json());
 // Endpoint Quiz (Protetto)
 app.get('/api/v1/quiz', validateIdentity, async (req, res) => {
   try {
-    // Prova a interrogare il database applicativo
-    const result = await pool.query('SELECT * FROM quizzes ORDER BY id ASC');
+    // Interroga il database applicativo estraendo i quiz globali e quelli dello studente
+    const result = await pool.query(
+      'SELECT * FROM quizzes WHERE created_by = \'global\' OR created_by = $1 ORDER BY id ASC',
+      [req.user.username]
+    );
     res.json({
       message: `Benvenuto ${req.user.username}! Ecco i quiz disponibili.`,
       userInfo: req.user,
@@ -101,7 +104,11 @@ app.get('/api/v1/quiz/:id/questions', validateIdentity, async (req, res) => {
 // Endpoint Flashcards (Protetto)
 app.get('/api/v1/flashcards', validateIdentity, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM flashcards ORDER BY id ASC');
+    // Estrae le flashcard globali e quelle personali dello studente
+    const result = await pool.query(
+      'SELECT * FROM flashcards WHERE created_by = \'global\' OR created_by = $1 ORDER BY id ASC',
+      [req.user.username]
+    );
     res.json({
       message: `Ecco le tue flashcard di studio, ${req.user.username}.`,
       data: result.rows
