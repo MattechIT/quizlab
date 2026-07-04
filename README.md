@@ -72,7 +72,15 @@ L'infrastruttura di base richiede un nodo Docker eseguito in un ambiente LXC non
 
 * Assicurarsi che il demone Docker abbia la rotazione dei log abilitata (`max-size: 10m`) per prevenire l'usura dell'unità NVMe.
 
-### 2. Avvio dello Stack Identità (Fase 1)
+### 2. Configurazione delle Variabili d'Ambiente (.env)
+
+Prima di avviare lo stack, creare un file `.env` a partire dal modello `.env.example` e configurare le password e i segreti necessari:
+
+```bash
+cp .env.example .env
+```
+
+### 3. Avvio dello Stack Identità (Fase 1)
 
 Inizializzare il database e l'Identity Provider prima dei microservizi:
 
@@ -85,9 +93,9 @@ docker compose logs -f keycloak
 
 ```
 
-### 3. Avvio Completo (Fase 2)
+### 4. Avvio Completo (Fase 2 & Fase 3)
 
-Una volta configurato il Realm su Keycloak, avviare il resto dello stack (Traefik, OAuth2-Proxy e Microservizi):
+Una volta configurato il Realm su Keycloak, avviare il resto dello stack (Traefik, OAuth2-Proxy, database applicativo e i microservizi):
 
 ```bash
 docker compose up -d
