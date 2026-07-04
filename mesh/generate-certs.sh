@@ -58,5 +58,8 @@ openssl x509 -req -in api-stats.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
 # Pulisci i file di firma temporanei per tenere pulita la cartella
 rm -f api-content.csr api-stats.csr api-stats.ext ca.srl
 
+# Imposta permessi di lettura per consentire a Envoy (utente non privilegiato 101) di leggere le chiavi private
+chmod 644 *
+
 echo "[SUCCESS] Certificati mTLS generati correttamente in: $CERT_DIR"
 ls -la
