@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { 
   GraduationCap, 
   LogOut, 
@@ -15,6 +14,7 @@ import QuizSelection from './components/QuizSelection';
 import QuizRunner from './components/QuizRunner';
 import Results from './components/Results';
 import Flashcards from './components/Flashcards';
+import GlobalDialogs from './components/GlobalDialogs';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('loading'); // loading, welcome, dashboard, selection, quiz, results, flashcards, flashcards-study
@@ -301,71 +301,12 @@ export default function App() {
         </div>
       </footer>
 
-      {/* ==========================================
-         PORTALE PER CUSTOM ALERT
-         ========================================== */}
-      {alertState.show && createPortal(
-        <div style={{
-          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-          backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10005, padding: '16px'
-        }}>
-          <div className="card animate-fade-in" style={{ maxWidth: '400px', width: '100%', padding: '24px', backgroundColor: '#121212', border: '1px solid var(--card-border)', textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>
-              {alertState.type === 'error' ? '❌' : 'ℹ️'}
-            </div>
-            <h4 style={{ fontSize: '1.15rem', fontWeight: '600', marginBottom: '12px' }}>
-              {alertState.type === 'error' ? 'Attenzione' : 'Messaggio'}
-            </h4>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: '1.4' }}>
-              {alertState.message}
-            </p>
-            <button onClick={() => setAlertState({ show: false, message: '', type: 'error' })} className="btn btn-primary" style={{ width: '100%', padding: '10px' }}>
-              OK
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* ==========================================
-         PORTALE PER CUSTOM CONFIRM
-         ========================================== */}
-      {confirmState.show && createPortal(
-        <div style={{
-          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-          backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10005, padding: '16px'
-        }}>
-          <div className="card animate-fade-in" style={{ maxWidth: '400px', width: '100%', padding: '24px', backgroundColor: '#121212', border: '1px solid var(--card-border)', textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>
-              ⚠️
-            </div>
-            <h4 style={{ fontSize: '1.15rem', fontWeight: '600', marginBottom: '12px' }}>
-              Conferma Richiesta
-            </h4>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: '1.4' }}>
-              {confirmState.message}
-            </p>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => setConfirmState({ show: false, message: '', onConfirm: null })} className="btn btn-secondary" style={{ flex: 1, padding: '10px' }}>
-                Annulla
-              </button>
-              <button 
-                onClick={() => {
-                  if (confirmState.onConfirm) confirmState.onConfirm();
-                  setConfirmState({ show: false, message: '', onConfirm: null });
-                }} 
-                className="btn btn-primary" 
-                style={{ flex: 1, padding: '10px', backgroundColor: 'var(--danger)', borderColor: 'var(--danger)' }}
-              >
-                Conferma
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <GlobalDialogs
+        alertState={alertState}
+        confirmState={confirmState}
+        onCloseAlert={() => setAlertState({ show: false, message: '', type: 'error' })}
+        onCloseConfirm={() => setConfirmState({ show: false, message: '', onConfirm: null })}
+      />
     </>
   );
 }
