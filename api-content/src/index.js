@@ -80,7 +80,7 @@ app.get('/api/v1/quiz/:id/questions', validateIdentity, async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT id, question_text, options, correct_option FROM questions WHERE quiz_id = $1 ORDER BY id ASC',
+      'SELECT id, question_text, options, correct_option, explanation, image_url FROM questions WHERE quiz_id = $1 ORDER BY id ASC',
       [quizId]
     );
 
@@ -89,7 +89,9 @@ app.get('/api/v1/quiz/:id/questions', validateIdentity, async (req, res) => {
       questions: result.rows.map(row => ({
         q: row.question_text,
         options: row.options, // pg serializza automaticamente il tipo JSONB in array JS
-        correct: row.correct_option
+        correct: row.correct_option,
+        explanation: row.explanation,
+        image_url: row.image_url
       }))
     });
   } catch (err) {
@@ -171,6 +173,159 @@ app.post('/api/v1/quiz/:id/questions', validateIdentity, async (req, res) => {
   }
 });
 
+
+// Endpoint per eliminare un quiz personale (Protetto)
+app.delete('/api/v1/quiz/:id', validateIdentity, async (req, res) => {
+  const quizId = parseInt(req.params.id);
+  const username = req.user.username;
+
+  if (isNaN(quizId)) {
+    return res.status(400).json({ error: "Bad Request", message: "ID quiz non valido" });
+  }
+
+  try {
+    // Controllo di proprietà
+    const quizCheck = await pool.query('SELECT created_by FROM quizzes WHERE id = $1', [quizId]);
+    
+    if (quizCheck.rows.length === 0) {
+      return res.status(404).json({ error: "Not Found", message: "Quiz non trovato." });
+    }
+
+    if (quizCheck.rows[0].created_by !== username) {
+      return res.status(403).json({ error: "Forbidden", message: "Non sei autorizzato a eliminare questo quiz." });
+    }
+
+    // Eliminazione (il CASCADE eliminerà in automatico le domande nel DB)
+    await pool.query('DELETE FROM quizzes WHERE id = $1', [quizId]);
+
+    res.json({ message: "Quiz eliminato con successo!" });
+  } catch (err) {
+    console.error("[ERROR] Errore nell'eliminazione del quiz:", err.message);
+    res.status(500).json({ error: "Internal Server Error", message: "Impossibile eliminare il quiz dal database." });
+  }
+});
+
+// Endpoint per modificare un quiz personale (Protetto)
+app.put('/api/v1/quiz/:id', validateIdentity, async (req, res) => {
+  const quizId = parseInt(req.params.id);
+  const { title, difficulty, description, imageUrl } = req.body;
+  const username = req.user.username;
+
+  if (isNaN(quizId)) {
+    return res.status(400).json({ error: "Bad Request", message: "ID quiz non valido" });
+  }
+
+  if (!title || !difficulty) {
+    return res.status(400).json({ error: "Bad Request", message: "Campi obbligatori: title, difficulty" });
+  }
+
+  try {
+    // Controllo di proprietà
+    const quizCheck = await pool.query('SELECT created_by FROM quizzes WHERE id = $1', [quizId]);
+    
+    if (quizCheck.rows.length === 0) {
+      return res.status(404).json({ error: "Not Found", message: "Quiz non trovato." });
+    }
+
+    if (quizCheck.rows[0].created_by !== username) {
+      return res.status(403).json({ error: "Forbidden", message: "Non sei autorizzato a modificare questo quiz." });
+    }
+
+    // Aggiornamento
+    await pool.query(
+      'UPDATE quizzes SET title = $1, difficulty = $2, description = $3, image_url = $4 WHERE id = $5',
+      [title, difficulty, description || null, imageUrl || null, quizId]
+    );
+
+    res.json({ message: "Quiz aggiornato con successo!" });
+  } catch (err) {
+    console.error("[ERROR] Errore nella modifica del quiz:", err.message);
+    res.status(500).json({ error: "Internal Server Error", message: "Impossibile aggiornare il quiz nel database." });
+  }
+});
+
+// Endpoint per eliminare una domanda da un quiz personale (Protetto)
+app.delete('/api/v1/questions/:id', validateIdentity, async (req, res) => {
+  const questionId = parseInt(req.params.id);
+  const username = req.user.username;
+
+  if (isNaN(questionId)) {
+    return res.status(400).json({ error: "Bad Request", message: "ID domanda non valido" });
+  }
+
+  try {
+    // Recupera la domanda e controlla la proprietà del quiz associato
+    const qCheck = await pool.query(
+      'SELECT q.quiz_id, qz.created_by FROM questions q JOIN quizzes qz ON q.quiz_id = qz.id WHERE q.id = $1',
+      [questionId]
+    );
+
+    if (qCheck.rows.length === 0) {
+      return res.status(404).json({ error: "Not Found", message: "Domanda non trovata." });
+    }
+
+    const { quiz_id, created_by } = qCheck.rows[0];
+
+    if (created_by !== username) {
+      return res.status(403).json({ error: "Forbidden", message: "Non sei autorizzato a eliminare questa domanda." });
+    }
+
+    // Elimina la domanda
+    await pool.query('DELETE FROM questions WHERE id = $1', [questionId]);
+
+    // Decrementa il contatore delle domande nel quiz
+    await pool.query('UPDATE quizzes SET questions = GREATEST(0, questions - 1) WHERE id = $1', [quiz_id]);
+
+    res.json({ message: "Domanda eliminata con successo!" });
+  } catch (err) {
+    console.error("[ERROR] Errore nell'eliminazione della domanda:", err.message);
+    res.status(500).json({ error: "Internal Server Error", message: "Impossibile eliminare la domanda dal database." });
+  }
+});
+
+// Endpoint per modificare una domanda di un quiz personale (Protetto)
+app.put('/api/v1/questions/:id', validateIdentity, async (req, res) => {
+  const questionId = parseInt(req.params.id);
+  const { questionText, options, correctOption, explanation, imageUrl } = req.body;
+  const username = req.user.username;
+
+  if (isNaN(questionId)) {
+    return res.status(400).json({ error: "Bad Request", message: "ID domanda non valido" });
+  }
+
+  if (!questionText || !options || correctOption === undefined) {
+    return res.status(400).json({ error: "Bad Request", message: "Campi obbligatori: questionText, options, correctOption" });
+  }
+
+  try {
+    // Recupera la domanda e controlla la proprietà del quiz associato
+    const qCheck = await pool.query(
+      'SELECT q.quiz_id, qz.created_by FROM questions q JOIN quizzes qz ON q.quiz_id = qz.id WHERE q.id = $1',
+      [questionId]
+    );
+
+    if (qCheck.rows.length === 0) {
+      return res.status(404).json({ error: "Not Found", message: "Domanda non trovata." });
+    }
+
+    const { created_by } = qCheck.rows[0];
+
+    if (created_by !== username) {
+      return res.status(403).json({ error: "Forbidden", message: "Non sei autorizzato a modificare questa domanda." });
+    }
+
+    // Aggiorna la domanda
+    await pool.query(
+      'UPDATE questions SET question_text = $1, options = $2, correct_option = $3, explanation = $4, image_url = $5 WHERE id = $6',
+      [questionText, JSON.stringify(options), parseInt(correctOption), explanation || null, imageUrl || null, questionId]
+    );
+
+    res.json({ message: "Domanda aggiornata con successo!" });
+  } catch (err) {
+    console.error("[ERROR] Errore nella modifica della domanda:", err.message);
+    res.status(500).json({ error: "Internal Server Error", message: "Impossibile aggiornare la domanda nel database." });
+  }
+});
 
 // Endpoint Flashcards (Protetto)
 app.get('/api/v1/flashcards', validateIdentity, async (req, res) => {
