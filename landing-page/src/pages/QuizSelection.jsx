@@ -11,12 +11,12 @@ import {
   BookOpenCheck,
   UserCheck,
 } from 'lucide-react';
-import QuizSelectionCard from './quizSelection/QuizSelectionCard';
-import CreateQuizModal from './quizSelection/CreateQuizModal';
-import EditQuizModal from './quizSelection/EditQuizModal';
-import ManageQuestionsModal from './quizSelection/ManageQuestionsModal';
-import EditQuestionModal from './quizSelection/EditQuestionModal';
-import CreateQuestionModal from './quizSelection/CreateQuestionModal';
+import QuizSelectionCard from '../components/quizSelection/QuizSelectionCard';
+import CreateQuizModal from '../components/quizSelection/CreateQuizModal';
+import EditQuizModal from '../components/quizSelection/EditQuizModal';
+import ManageQuestionsModal from '../components/quizSelection/ManageQuestionsModal';
+import EditQuestionModal from '../components/quizSelection/EditQuestionModal';
+import CreateQuestionModal from '../components/quizSelection/CreateQuestionModal';
 
 export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards, onRefresh, onBack }) {
   // Stati per il controllo dei modali di inserimento

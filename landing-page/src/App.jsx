@@ -10,7 +10,7 @@ import {
   LayoutDashboard
 } from 'lucide-react';
 import DashboardHome from './pages/DashboardHome';
-import QuizSelection from './components/QuizSelection';
+import QuizSelection from './pages/QuizSelection';
 import QuizRunner from './pages/QuizRunner';
 import Results from './pages/Results';
 import Flashcards from './components/Flashcards';
