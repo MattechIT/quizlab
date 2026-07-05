@@ -10,13 +10,14 @@ import {
   Shield,
   LayoutDashboard
 } from 'lucide-react';
+import DashboardHome from './components/DashboardHome';
 import QuizSelection from './components/QuizSelection';
 import QuizRunner from './components/QuizRunner';
 import Results from './components/Results';
 import Flashcards from './components/Flashcards';
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState('loading'); // loading, welcome, selection, quiz, results, flashcards, flashcards-study
+  const [currentPage, setCurrentPage] = useState('loading'); // loading, welcome, dashboard, selection, quiz, results, flashcards, flashcards-study
   const [user, setUser] = useState(null);
   const [quizzes, setQuizzes] = useState([]);
   const [activeQuizId, setActiveQuizId] = useState(null);
@@ -35,9 +36,9 @@ export default function App() {
         const data = await response.json();
         setUser(data.userInfo);
         setQuizzes(data.data || []);
-        setCurrentPage('selection');
+        setCurrentPage('dashboard');
         // Imposta lo stato iniziale del browser al boot
-        window.history.replaceState({ page: 'selection' }, '');
+        window.history.replaceState({ page: 'dashboard' }, '');
       } else {
         setUser(null);
         setCurrentPage('welcome');
@@ -66,7 +67,7 @@ export default function App() {
       } else {
         // Fallback se la cronologia è vuota
         if (user) {
-          setCurrentPage('selection');
+          setCurrentPage('dashboard');
         } else {
           setCurrentPage('welcome');
         }
@@ -185,6 +186,15 @@ export default function App() {
           </div>
         );
 
+      case 'dashboard':
+        return (
+          <DashboardHome 
+            user={user} 
+            quizzes={quizzes} 
+            onNavigateTo={(page) => navigateTo(page)} 
+          />
+        );
+
       case 'selection':
         return (
           <QuizSelection 
@@ -211,7 +221,7 @@ export default function App() {
             score={lastQuizResult.score} 
             userAnswers={lastQuizResult.userAnswers}
             username={user?.username} 
-            onRestart={() => navigateTo('selection')} 
+            onRestart={() => navigateTo('dashboard')} 
           />
         );
 
@@ -221,7 +231,7 @@ export default function App() {
             initialView="decks"
             activeDeck={null}
             onStartStudy={(deck) => navigateTo('flashcards-study', { activeDeck: deck })}
-            onBack={() => navigateTo('selection')}
+            onBack={() => navigateTo('dashboard')}
           />
         );
 
@@ -231,7 +241,7 @@ export default function App() {
             initialView="study"
             activeDeck={activeDeck}
             onBackDecks={() => navigateTo('flashcards')}
-            onBack={() => navigateTo('selection')}
+            onBack={() => navigateTo('dashboard')}
           />
         );
 
@@ -245,7 +255,7 @@ export default function App() {
       {/* NAVBAR */}
       <header className="navbar">
         <div className="container navbar-container">
-          <a href="#" onClick={(e) => { e.preventDefault(); if (user) navigateTo('selection'); }} className="logo">
+          <a href="#" onClick={(e) => { e.preventDefault(); if (user) navigateTo('dashboard'); }} className="logo">
             <GraduationCap className="logo-icon" size={24} />
             <span>Quiz<span style={{ color: 'var(--accent-hover)' }}>Lab</span></span>
           </a>
@@ -254,11 +264,19 @@ export default function App() {
             <div className="nav-links" style={{ alignItems: 'center' }}>
               <a 
                 href="#" 
+                onClick={(e) => { e.preventDefault(); navigateTo('dashboard'); }} 
+                className={`nav-link ${currentPage === 'dashboard' ? 'active' : ''}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <LayoutDashboard size={16} /> Home
+              </a>
+              <a 
+                href="#" 
                 onClick={(e) => { e.preventDefault(); navigateTo('selection'); }} 
                 className={`nav-link ${['selection', 'quiz', 'results'].includes(currentPage) ? 'active' : ''}`}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                <LayoutDashboard size={16} /> Dashboard
+                <HelpCircle size={16} /> Quiz
               </a>
               <a 
                 href="#" 
