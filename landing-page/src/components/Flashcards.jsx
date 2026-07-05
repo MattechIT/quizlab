@@ -17,13 +17,13 @@ import {
   BookOpenCheck
 } from 'lucide-react';
 
-export default function Flashcards({ onBack }) {
-  const [currentView, setCurrentView] = useState('decks'); // 'decks', 'study'
+export default function Flashcards({ initialView = 'decks', activeDeck: propActiveDeck = null, onStartStudy, onBackDecks, onBack }) {
+  const [currentView, setCurrentView] = useState(initialView);
   const [decks, setDecks] = useState([]);
   const [deckCards, setDeckCards] = useState([]);
   
   // Mazzo attualmente in fase di studio
-  const [selectedDeck, setSelectedDeck] = useState(null);
+  const [selectedDeck, setSelectedDeck] = useState(propActiveDeck);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   
@@ -89,6 +89,34 @@ export default function Flashcards({ onBack }) {
     loadDecks();
   }, []);
 
+  // Sincronizza lo stato di visualizzazione e carica le carte del mazzo in caso di popstate
+  useEffect(() => {
+    setCurrentView(initialView);
+    if (initialView === 'study' && propActiveDeck) {
+      setSelectedDeck(propActiveDeck);
+      const loadCardsForStudy = async () => {
+        try {
+          setLoading(true);
+          const res = await fetch(`/api/v1/flashcards/decks/${propActiveDeck.id}/cards`);
+          if (res.ok) {
+            const data = await res.json();
+            setDeckCards(data.data || []);
+            setCurrentIndex(0);
+            setIsFlipped(false);
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadCardsForStudy();
+    } else {
+      setSelectedDeck(null);
+      setDeckCards([]);
+    }
+  }, [initialView, propActiveDeck]);
+
   // Creazione Nuovo Mazzo (POST)
   const handleCreateDeck = async (e) => {
     e.preventDefault();
@@ -113,11 +141,13 @@ export default function Flashcards({ onBack }) {
         setDeckDescription('');
         await loadDecks();
       } else {
-        alert("Errore durante la creazione del mazzo.");
+        if (window.customAlert) window.customAlert("Errore durante la creazione del mazzo.");
+        else alert("Errore durante la creazione del mazzo.");
       }
     } catch (err) {
       console.error(err);
-      alert("Errore di rete.");
+      if (window.customAlert) window.customAlert("Errore di rete.");
+      else alert("Errore di rete.");
     } finally {
       setSubmittingDeck(false);
     }
@@ -146,11 +176,13 @@ export default function Flashcards({ onBack }) {
         setEditingDeck(null);
         await loadDecks();
       } else {
-        alert("Errore durante la modifica del mazzo.");
+        if (window.customAlert) window.customAlert("Errore durante la modifica del mazzo.");
+        else alert("Errore durante la modifica del mazzo.");
       }
     } catch (err) {
       console.error(err);
-      alert("Errore di rete.");
+      if (window.customAlert) window.customAlert("Errore di rete.");
+      else alert("Errore di rete.");
     } finally {
       setUpdatingDeck(false);
     }
@@ -158,46 +190,59 @@ export default function Flashcards({ onBack }) {
 
   // Eliminazione Mazzo (DELETE)
   const handleDeleteDeck = async (deckId) => {
-    if (!window.confirm("Sei sicuro di voler eliminare questo mazzo e tutte le sue flashcard in esso contenute?")) {
-      return;
-    }
+    const deleteAction = async () => {
+      try {
+        const response = await fetch(`/api/v1/flashcards/decks/${deckId}`, {
+          method: 'DELETE'
+        });
 
-    try {
-      const response = await fetch(`/api/v1/flashcards/decks/${deckId}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        await loadDecks();
-      } else {
-        alert("Errore durante l'eliminazione del mazzo.");
+        if (response.ok) {
+          await loadDecks();
+        } else {
+          if (window.customAlert) window.customAlert("Errore durante l'eliminazione del mazzo.");
+          else alert("Errore durante l'eliminazione del mazzo.");
+        }
+      } catch (err) {
+        console.error(err);
+        if (window.customAlert) window.customAlert("Errore di rete.");
+        else alert("Errore di rete.");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Errore di rete.");
+    };
+
+    if (window.customConfirm) {
+      window.customConfirm("Sei sicuro di voler eliminare questo mazzo e tutte le sue flashcard in esso contenute?", deleteAction);
+    } else {
+      if (window.confirm("Sei sicuro di voler eliminare questo mazzo e tutte le sue flashcard in esso contenute?")) {
+        deleteAction();
+      }
     }
   };
 
   // Avvio dello studio di un mazzo specifico
   const handleStartStudy = async (deck) => {
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/v1/flashcards/decks/${deck.id}/cards`);
-      if (res.ok) {
-        const data = await res.json();
-        setDeckCards(data.data || []);
-        setSelectedDeck(deck);
-        setCurrentIndex(0);
-        setIsFlipped(false);
-        setCurrentView('study');
-      } else {
-        alert("Impossibile caricare le flashcard di questo mazzo.");
+    if (onStartStudy) {
+      onStartStudy(deck);
+    } else {
+      // Fallback in assenza di navigatore esterno
+      try {
+        setLoading(true);
+        const res = await fetch(`/api/v1/flashcards/decks/${deck.id}/cards`);
+        if (res.ok) {
+          const data = await res.json();
+          setDeckCards(data.data || []);
+          setSelectedDeck(deck);
+          setCurrentIndex(0);
+          setIsFlipped(false);
+          setCurrentView('study');
+        } else {
+          alert("Impossibile caricare le flashcard di questo mazzo.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Errore di rete.");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error(err);
-      alert("Errore di rete.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -226,24 +271,32 @@ export default function Flashcards({ onBack }) {
 
   // Eliminazione Carta (DELETE)
   const handleDeleteCard = async (cardId) => {
-    if (!window.confirm("Sei sicuro di voler eliminare questa flashcard?")) {
-      return;
-    }
+    const deleteAction = async () => {
+      try {
+        const response = await fetch(`/api/v1/flashcards/cards/${cardId}`, {
+          method: 'DELETE'
+        });
 
-    try {
-      const response = await fetch(`/api/v1/flashcards/cards/${cardId}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        await loadManageCards(manageDeck.id);
-        await loadDecks(); // Rinfresca il conteggio carte sulla dashboard
-      } else {
-        alert("Errore nell'eliminazione della flashcard.");
+        if (response.ok) {
+          await loadManageCards(manageDeck.id);
+          await loadDecks(); // Rinfresca il conteggio carte sulla dashboard
+        } else {
+          if (window.customAlert) window.customAlert("Errore nell'eliminazione della flashcard.");
+          else alert("Errore nell'eliminazione della flashcard.");
+        }
+      } catch (err) {
+        console.error(err);
+        if (window.customAlert) window.customAlert("Errore di rete.");
+        else alert("Errore di rete.");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Errore di rete.");
+    };
+
+    if (window.customConfirm) {
+      window.customConfirm("Sei sicuro di voler eliminare questa flashcard?", deleteAction);
+    } else {
+      if (window.confirm("Sei sicuro di voler eliminare questa flashcard?")) {
+        deleteAction();
+      }
     }
   };
 
@@ -282,11 +335,13 @@ export default function Flashcards({ onBack }) {
         setEditingCard(null);
         await loadManageCards(manageDeck.id);
       } else {
-        alert("Errore durante la modifica della carta.");
+        if (window.customAlert) window.customAlert("Errore durante la modifica della carta.");
+        else alert("Errore durante la modifica della carta.");
       }
     } catch (err) {
       console.error(err);
-      alert("Errore di rete.");
+      if (window.customAlert) window.customAlert("Errore di rete.");
+      else alert("Errore di rete.");
     } finally {
       setUpdatingCard(false);
     }
@@ -322,38 +377,27 @@ export default function Flashcards({ onBack }) {
         await loadManageCards(manageDeck.id);
         await loadDecks();
       } else {
-        alert("Errore durante l'aggiunta della flashcard.");
+        if (window.customAlert) window.customAlert("Errore durante l'aggiunta della flashcard.");
+        else alert("Errore durante l'aggiunta della flashcard.");
       }
     } catch (err) {
       console.error(err);
-      alert("Errore di rete.");
+      if (window.customAlert) window.customAlert("Errore di rete.");
+      else alert("Errore di rete.");
     } finally {
       setSubmittingCard(false);
     }
   };
 
-  const handleNext = (e) => {
-    e.stopPropagation();
-    setIsFlipped(false);
-    setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % deckCards.length);
-    }, 150);
-  };
-
-  const handlePrev = (e) => {
-    e.stopPropagation();
-    setIsFlipped(false);
-    setTimeout(() => {
-      setCurrentIndex((prev) => (prev - 1 + deckCards.length) % deckCards.length);
-    }, 150);
-  };
-
-  // RITORNO A DASHBOARD GENERALE (SE SIAMO IN GRIGLIA) O A GRIGLIA MAZZI (SE SIAMO IN STUDY)
   const handleBackNavigation = () => {
     if (currentView === 'study') {
-      setCurrentView('decks');
-      setSelectedDeck(null);
-      setDeckCards([]);
+      if (onBackDecks) {
+        onBackDecks();
+      } else {
+        setCurrentView('decks');
+        setSelectedDeck(null);
+        setDeckCards([]);
+      }
     } else {
       onBack();
     }

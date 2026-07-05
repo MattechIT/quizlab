@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   GraduationCap, 
   LogOut, 
@@ -15,11 +16,16 @@ import Results from './components/Results';
 import Flashcards from './components/Flashcards';
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState('loading'); // loading, welcome, selection, quiz, results, flashcards
+  const [currentPage, setCurrentPage] = useState('loading'); // loading, welcome, selection, quiz, results, flashcards, flashcards-study
   const [user, setUser] = useState(null);
   const [quizzes, setQuizzes] = useState([]);
   const [activeQuizId, setActiveQuizId] = useState(null);
   const [lastQuizResult, setLastQuizResult] = useState({ quizId: null, score: 0, userAnswers: [] });
+  const [activeDeck, setActiveDeck] = useState(null);
+
+  // Stati per modali di Alert e Confirm Custom
+  const [alertState, setAlertState] = useState({ show: false, message: '', type: 'error' });
+  const [confirmState, setConfirmState] = useState({ show: false, message: '', onConfirm: null });
 
   // Controlla se la sessione OIDC è attiva chiamando l'API dei quiz protetta
   const checkAuth = async () => {
@@ -30,15 +36,18 @@ export default function App() {
         setUser(data.userInfo);
         setQuizzes(data.data || []);
         setCurrentPage('selection');
+        // Imposta lo stato iniziale del browser al boot
+        window.history.replaceState({ page: 'selection' }, '');
       } else {
-        // Non autorizzato o cookie scaduto
         setUser(null);
         setCurrentPage('welcome');
+        window.history.replaceState({ page: 'welcome' }, '');
       }
     } catch (error) {
       console.error("[ERROR] Errore di connessione alle API:", error);
       setUser(null);
       setCurrentPage('welcome');
+      window.history.replaceState({ page: 'welcome' }, '');
     }
   };
 
@@ -46,14 +55,77 @@ export default function App() {
     checkAuth();
   }, []);
 
+  // Gestione del tasto indietro del browser (popstate)
+  useEffect(() => {
+    const handlePopState = (event) => {
+      if (event.state && event.state.page) {
+        setCurrentPage(event.state.page);
+        if (event.state.activeQuizId !== undefined) setActiveQuizId(event.state.activeQuizId);
+        if (event.state.lastQuizResult !== undefined) setLastQuizResult(event.state.lastQuizResult);
+        if (event.state.activeDeck !== undefined) setActiveDeck(event.state.activeDeck);
+      } else {
+        // Fallback se la cronologia è vuota
+        if (user) {
+          setCurrentPage('selection');
+        } else {
+          setCurrentPage('welcome');
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [user, activeQuizId, lastQuizResult, activeDeck]);
+
+  // Espone globalmente le API per Alert e Confirm personalizzati
+  useEffect(() => {
+    window.customAlert = (message, type = 'error') => {
+      setAlertState({ show: true, message, type });
+    };
+    window.customConfirm = (message, onConfirm) => {
+      setConfirmState({ show: true, message, onConfirm });
+    };
+    return () => {
+      delete window.customAlert;
+      delete window.customConfirm;
+    };
+  }, []);
+
+  // Navigatore personalizzato che spinge le viste nella cronologia del browser
+  const navigateTo = (page, stateToPush = {}) => {
+    setCurrentPage(page);
+    
+    let nextQuizId = activeQuizId;
+    let nextResult = lastQuizResult;
+    let nextDeck = activeDeck;
+
+    if (stateToPush.activeQuizId !== undefined) {
+      setActiveQuizId(stateToPush.activeQuizId);
+      nextQuizId = stateToPush.activeQuizId;
+    }
+    if (stateToPush.lastQuizResult !== undefined) {
+      setLastQuizResult(stateToPush.lastQuizResult);
+      nextResult = stateToPush.lastQuizResult;
+    }
+    if (stateToPush.activeDeck !== undefined) {
+      setActiveDeck(stateToPush.activeDeck);
+      nextDeck = stateToPush.activeDeck;
+    }
+
+    window.history.pushState({ 
+      page, 
+      activeQuizId: nextQuizId,
+      lastQuizResult: nextResult,
+      activeDeck: nextDeck
+    }, '');
+  };
+
   const handleSelectQuiz = (quizId) => {
-    setActiveQuizId(quizId);
-    setCurrentPage('quiz');
+    navigateTo('quiz', { activeQuizId: quizId });
   };
 
   const handleQuizComplete = (score, userAnswers) => {
-    setLastQuizResult({ quizId: activeQuizId, score, userAnswers });
-    setCurrentPage('results');
+    navigateTo('results', { lastQuizResult: { quizId: activeQuizId, score, userAnswers } });
   };
 
   // Avvia la procedura OIDC tramite oauth2-proxy indicando di ritornare alla home dopo il login
@@ -118,7 +190,7 @@ export default function App() {
           <QuizSelection 
             quizzes={quizzes} 
             onSelectQuiz={handleSelectQuiz} 
-            onViewFlashcards={() => setCurrentPage('flashcards')} 
+            onViewFlashcards={() => navigateTo('flashcards')} 
             onRefresh={checkAuth}
           />
         );
@@ -128,7 +200,7 @@ export default function App() {
           <QuizRunner 
             quizId={activeQuizId} 
             onComplete={handleQuizComplete} 
-            onCancel={() => setCurrentPage('selection')} 
+            onCancel={() => navigateTo('selection')} 
           />
         );
 
@@ -139,14 +211,27 @@ export default function App() {
             score={lastQuizResult.score} 
             userAnswers={lastQuizResult.userAnswers}
             username={user?.username} 
-            onRestart={() => setCurrentPage('selection')} 
+            onRestart={() => navigateTo('selection')} 
           />
         );
 
       case 'flashcards':
         return (
           <Flashcards 
-            onBack={() => setCurrentPage('selection')}
+            initialView="decks"
+            activeDeck={null}
+            onStartStudy={(deck) => navigateTo('flashcards-study', { activeDeck: deck })}
+            onBack={() => navigateTo('selection')}
+          />
+        );
+
+      case 'flashcards-study':
+        return (
+          <Flashcards 
+            initialView="study"
+            activeDeck={activeDeck}
+            onBackDecks={() => navigateTo('flashcards')}
+            onBack={() => navigateTo('selection')}
           />
         );
 
@@ -160,7 +245,7 @@ export default function App() {
       {/* NAVBAR */}
       <header className="navbar">
         <div className="container navbar-container">
-          <a href="#" onClick={(e) => { e.preventDefault(); if (user) setCurrentPage('selection'); }} className="logo">
+          <a href="#" onClick={(e) => { e.preventDefault(); if (user) navigateTo('selection'); }} className="logo">
             <GraduationCap className="logo-icon" size={24} />
             <span>Quiz<span style={{ color: 'var(--accent-hover)' }}>Lab</span></span>
           </a>
@@ -169,7 +254,7 @@ export default function App() {
             <div className="nav-links" style={{ alignItems: 'center' }}>
               <a 
                 href="#" 
-                onClick={(e) => { e.preventDefault(); setCurrentPage('selection'); }} 
+                onClick={(e) => { e.preventDefault(); navigateTo('selection'); }} 
                 className={`nav-link ${['selection', 'quiz', 'results'].includes(currentPage) ? 'active' : ''}`}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
               >
@@ -177,8 +262,8 @@ export default function App() {
               </a>
               <a 
                 href="#" 
-                onClick={(e) => { e.preventDefault(); setCurrentPage('flashcards'); }} 
-                className={`nav-link ${currentPage === 'flashcards' ? 'active' : ''}`}
+                onClick={(e) => { e.preventDefault(); navigateTo('flashcards'); }} 
+                className={`nav-link ${['flashcards', 'flashcards-study'].includes(currentPage) ? 'active' : ''}`}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 <BookOpen size={16} /> Flashcards
@@ -211,7 +296,7 @@ export default function App() {
 
       {/* FOOTER */}
       <footer style={{ borderTop: '1px solid var(--card-border)', padding: '20px 0', fontSize: '0.85rem', color: 'var(--text-muted)', backgroundColor: '#070707' }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             &copy; 2026 QuizLab Platform. Architettura Didattica Multi-Tier.
           </div>
@@ -221,6 +306,72 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* ==========================================
+         PORTALE PER CUSTOM ALERT
+         ========================================== */}
+      {alertState.show && createPortal(
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10005, padding: '16px'
+        }}>
+          <div className="card animate-fade-in" style={{ maxWidth: '400px', width: '100%', padding: '24px', backgroundColor: '#121212', border: '1px solid var(--card-border)', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>
+              {alertState.type === 'error' ? '❌' : 'ℹ️'}
+            </div>
+            <h4 style={{ fontSize: '1.15rem', fontWeight: '600', marginBottom: '12px' }}>
+              {alertState.type === 'error' ? 'Attenzione' : 'Messaggio'}
+            </h4>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: '1.4' }}>
+              {alertState.message}
+            </p>
+            <button onClick={() => setAlertState({ show: false, message: '', type: 'error' })} className="btn btn-primary" style={{ width: '100%', padding: '10px' }}>
+              OK
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ==========================================
+         PORTALE PER CUSTOM CONFIRM
+         ========================================== */}
+      {confirmState.show && createPortal(
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10005, padding: '16px'
+        }}>
+          <div className="card animate-fade-in" style={{ maxWidth: '400px', width: '100%', padding: '24px', backgroundColor: '#121212', border: '1px solid var(--card-border)', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>
+              ⚠️
+            </div>
+            <h4 style={{ fontSize: '1.15rem', fontWeight: '600', marginBottom: '12px' }}>
+              Conferma Richiesta
+            </h4>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: '1.4' }}>
+              {confirmState.message}
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => setConfirmState({ show: false, message: '', onConfirm: null })} className="btn btn-secondary" style={{ flex: 1, padding: '10px' }}>
+                Annulla
+              </button>
+              <button 
+                onClick={() => {
+                  if (confirmState.onConfirm) confirmState.onConfirm();
+                  setConfirmState({ show: false, message: '', onConfirm: null });
+                }} 
+                className="btn btn-primary" 
+                style={{ flex: 1, padding: '10px', backgroundColor: 'var(--danger)', borderColor: 'var(--danger)' }}
+              >
+                Conferma
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
 }

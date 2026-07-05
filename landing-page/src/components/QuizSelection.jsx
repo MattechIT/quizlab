@@ -149,11 +149,13 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
         // Rinfresca la lista
         if (onRefresh) onRefresh();
       } else {
-        alert("Errore durante la creazione del quiz.");
+        if (window.customAlert) window.customAlert("Errore durante la creazione del quiz.");
+        else alert("Errore durante la creazione del quiz.");
       }
     } catch (err) {
       console.error(err);
-      alert("Errore di rete.");
+      if (window.customAlert) window.customAlert("Errore di rete.");
+      else alert("Errore di rete.");
     } finally {
       setSubmittingQuiz(false);
     }
@@ -184,11 +186,13 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
         setEditingQuiz(null);
         if (onRefresh) onRefresh();
       } else {
-        alert("Errore durante l'aggiornamento del quiz.");
+        if (window.customAlert) window.customAlert("Errore durante l'aggiornamento del quiz.");
+        else alert("Errore durante l'aggiornamento del quiz.");
       }
     } catch (err) {
       console.error(err);
-      alert("Errore di rete.");
+      if (window.customAlert) window.customAlert("Errore di rete.");
+      else alert("Errore di rete.");
     } finally {
       setUpdatingQuiz(false);
     }
@@ -196,23 +200,31 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
 
   // Eliminazione Quiz (DELETE)
   const handleDeleteQuiz = async (quizId) => {
-    if (!window.confirm("Sei sicuro di voler eliminare questo quiz e tutte le sue domande in modo permanente?")) {
-      return;
-    }
+    const deleteAction = async () => {
+      try {
+        const response = await fetch(`/api/v1/quiz/${quizId}`, {
+          method: 'DELETE'
+        });
 
-    try {
-      const response = await fetch(`/api/v1/quiz/${quizId}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        if (onRefresh) onRefresh();
-      } else {
-        alert("Errore durante l'eliminazione del quiz.");
+        if (response.ok) {
+          if (onRefresh) onRefresh();
+        } else {
+          if (window.customAlert) window.customAlert("Errore durante l'eliminazione del quiz.");
+          else alert("Errore durante l'eliminazione del quiz.");
+        }
+      } catch (err) {
+        console.error(err);
+        if (window.customAlert) window.customAlert("Errore di rete.");
+        else alert("Errore di rete.");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Errore di rete.");
+    };
+
+    if (window.customConfirm) {
+      window.customConfirm("Sei sicuro di voler eliminare questo quiz e tutte le sue domande in modo permanente?", deleteAction);
+    } else {
+      if (window.confirm("Sei sicuro di voler eliminare questo quiz e tutte le sue domande in modo permanente?")) {
+        deleteAction();
+      }
     }
   };
 
@@ -241,25 +253,33 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
 
   // Eliminazione Domanda (DELETE)
   const handleDeleteQuestion = async (questionId) => {
-    if (!window.confirm("Sei sicuro di voler eliminare questa domanda dal quiz?")) {
-      return;
-    }
+    const deleteAction = async () => {
+      try {
+        const response = await fetch(`/api/v1/questions/${questionId}`, {
+          method: 'DELETE'
+        });
 
-    try {
-      const response = await fetch(`/api/v1/questions/${questionId}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        // Rinfresca il manager e la dashboard
-        await loadManageQuestions(manageQuiz.id);
-        if (onRefresh) onRefresh();
-      } else {
-        alert("Errore durante l'eliminazione della domanda.");
+        if (response.ok) {
+          // Rinfresca il manager e la dashboard
+          await loadManageQuestions(manageQuiz.id);
+          if (onRefresh) onRefresh();
+        } else {
+          if (window.customAlert) window.customAlert("Errore durante l'eliminazione della domanda.");
+          else alert("Errore durante l'eliminazione della domanda.");
+        }
+      } catch (err) {
+        console.error(err);
+        if (window.customAlert) window.customAlert("Errore di rete.");
+        else alert("Errore di rete.");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Errore di rete.");
+    };
+
+    if (window.customConfirm) {
+      window.customConfirm("Sei sicuro di voler eliminare questa domanda dal quiz?", deleteAction);
+    } else {
+      if (window.confirm("Sei sicuro di voler eliminare questa domanda dal quiz?")) {
+        deleteAction();
+      }
     }
   };
 
@@ -305,11 +325,13 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
         await loadManageQuestions(manageQuiz.id);
         if (onRefresh) onRefresh();
       } else {
-        alert("Errore durante la modifica della domanda.");
+        if (window.customAlert) window.customAlert("Errore durante la modifica della domanda.");
+        else alert("Errore durante la modifica della domanda.");
       }
     } catch (err) {
       console.error(err);
-      alert("Errore di rete.");
+      if (window.customAlert) window.customAlert("Errore di rete.");
+      else alert("Errore di rete.");
     } finally {
       setUpdatingQuestion(false);
     }
@@ -339,6 +361,7 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
       if (response.ok) {
         setShowQuestionModal(false);
         // Resetta form
+        setNewQuizTitle(''); // non necessario ma ok
         setQuestionText('');
         setOptA('');
         setOptB('');
@@ -353,11 +376,13 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
         }
         if (onRefresh) onRefresh();
       } else {
-        alert("Errore nell'aggiunta della domanda.");
+        if (window.customAlert) window.customAlert("Errore nell'aggiunta della domanda.");
+        else alert("Errore nell'aggiunta della domanda.");
       }
     } catch (err) {
       console.error(err);
-      alert("Errore di rete.");
+      if (window.customAlert) window.customAlert("Errore di rete.");
+      else alert("Errore di rete.");
     } finally {
       setSubmittingQuestion(false);
     }
