@@ -12,20 +12,32 @@ import {
   X,
   Image as ImageIcon,
   BookOpenCheck,
-  UserCheck
+  UserCheck,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 
 export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards, onRefresh }) {
-  // Stati per il controllo dei modali
+  // Stati per il controllo dei modali di inserimento
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [selectedQuizIdForQuestion, setSelectedQuizIdForQuestion] = useState(null);
+
+  // Stati per il controllo del modale di modifica
+  const [showEditQuizModal, setShowEditQuizModal] = useState(false);
+  const [editingQuiz, setEditingQuiz] = useState(null);
 
   // Stati del form Creazione Quiz
   const [newQuizTitle, setNewQuizTitle] = useState('');
   const [newQuizDifficulty, setNewQuizDifficulty] = useState('Facile');
   const [newQuizDescription, setNewQuizDescription] = useState('');
   const [newQuizImageUrl, setNewQuizImageUrl] = useState('');
+
+  // Stati del form Modifica Quiz
+  const [editQuizTitle, setEditQuizTitle] = useState('');
+  const [editQuizDifficulty, setEditQuizDifficulty] = useState('Facile');
+  const [editQuizDescription, setEditQuizDescription] = useState('');
+  const [editQuizImageUrl, setEditQuizImageUrl] = useState('');
 
   // Stati del form Aggiunta Domanda
   const [questionText, setQuestionText] = useState('');
@@ -39,6 +51,7 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
 
   // Stati di caricamento
   const [submittingQuiz, setSubmittingQuiz] = useState(false);
+  const [updatingQuiz, setUpdatingQuiz] = useState(false);
   const [submittingQuestion, setSubmittingQuestion] = useState(false);
 
   const getQuizMetadata = (id, createdBy) => {
@@ -122,6 +135,63 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
       alert("Errore di rete.");
     } finally {
       setSubmittingQuiz(false);
+    }
+  };
+
+  // Modifica Quiz Esistente (PUT)
+  const handleUpdateQuiz = async (e) => {
+    e.preventDefault();
+    if (!editQuizTitle || !editQuizDifficulty || !editingQuiz) return;
+
+    try {
+      setUpdatingQuiz(true);
+      const response = await fetch(`/api/v1/quiz/${editingQuiz.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: editQuizTitle,
+          difficulty: editQuizDifficulty,
+          description: editQuizDescription,
+          imageUrl: editQuizImageUrl
+        })
+      });
+
+      if (response.ok) {
+        setShowEditQuizModal(false);
+        setEditingQuiz(null);
+        if (onRefresh) onRefresh();
+      } else {
+        alert("Errore durante l'aggiornamento del quiz.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Errore di rete.");
+    } finally {
+      setUpdatingQuiz(false);
+    }
+  };
+
+  // Eliminazione Quiz (DELETE)
+  const handleDeleteQuiz = async (quizId) => {
+    if (!window.confirm("Sei sicuro di voler eliminare questo quiz e tutte le sue domande in modo permanente?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/v1/quiz/${quizId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        if (onRefresh) onRefresh();
+      } else {
+        alert("Errore durante l'eliminazione del quiz.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Errore di rete.");
     }
   };
 
@@ -267,9 +337,37 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
                 </div>
               </div>
 
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '8px', color: 'var(--text-primary)' }}>
-                {quiz.title}
-              </h3>
+              {/* RIGA TITOLO CON CONTROLLI DI MODIFICA/ELIMINAZIONE QUIZ */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px', gap: '12px' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'var(--text-primary)', margin: 0, flex: 1, lineHeight: '1.3' }}>
+                  {quiz.title}
+                </h3>
+                {!isGlobal && (
+                  <div style={{ display: 'flex', gap: '4px', marginTop: '2px' }}>
+                    <button 
+                      onClick={() => {
+                        setEditingQuiz(quiz);
+                        setEditQuizTitle(quiz.title);
+                        setEditQuizDifficulty(quiz.difficulty);
+                        setEditQuizDescription(quiz.description || '');
+                        setEditQuizImageUrl(quiz.image_url || '');
+                        setShowEditQuizModal(true);
+                      }}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                      title="Modifica metadati quiz"
+                    >
+                      <Edit3 size={15} style={{ transition: 'color 0.15s ease' }} onMouseEnter={(e)=>e.currentTarget.style.color='#fff'} onMouseLeave={(e)=>e.currentTarget.style.color='var(--text-secondary)'} />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteQuiz(quiz.id)}
+                      style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                      title="Elimina quiz in modo permanente"
+                    >
+                      <Trash2 size={15} style={{ transition: 'opacity 0.15s ease' }} onMouseEnter={(e)=>e.currentTarget.style.opacity='0.8'} onMouseLeave={(e)=>e.currentTarget.style.opacity='1'} />
+                    </button>
+                  </div>
+                )}
+              </div>
               
               <p style={{ fontSize: '0.9rem', marginBottom: '24px', flex: 1, color: 'var(--text-secondary)' }}>
                 {quiz.description || meta.desc}
@@ -383,6 +481,87 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
                 <button type="button" onClick={() => setShowQuizModal(false)} className="btn btn-secondary">Annulla</button>
                 <button type="submit" disabled={submittingQuiz} className="btn btn-primary">
                   {submittingQuiz ? 'Salvataggio...' : 'Crea modulo'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ==========================================
+         MODALE MODIFICA QUIZ (MAPPATO TRAMITE PORTALE)
+         ========================================== */}
+      {showEditQuizModal && createPortal(
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px'
+        }}>
+          <div className="card animate-fade-in" style={{ maxWidth: '480px', width: '100%', padding: '28px', backgroundColor: '#121212', border: '1px solid var(--card-border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Modifica Quiz</h3>
+              <button onClick={() => { setShowEditQuizModal(false); setEditingQuiz(null); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateQuiz} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Titolo Quiz *</label>
+                <input 
+                  type="text" required value={editQuizTitle} onChange={(e) => setEditQuizTitle(e.target.value)}
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Difficoltà *</label>
+                <select 
+                  value={editQuizDifficulty} onChange={(e) => setEditQuizDifficulty(e.target.value)}
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                >
+                  <option value="Facile">Facile</option>
+                  <option value="Medio">Medio</option>
+                  <option value="Difficile">Difficile</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Descrizione</label>
+                <textarea 
+                  value={editQuizDescription} onChange={(e) => setEditQuizDescription(e.target.value)}
+                  rows={3}
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', resize: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <ImageIcon size={14} /> URL Immagine Copertina (Opzionale)
+                </label>
+                <input 
+                  type="url" value={editQuizImageUrl} onChange={(e) => setEditQuizImageUrl(e.target.value)}
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'end', gap: '12px', marginTop: '12px' }}>
+                <button type="button" onClick={() => { setShowEditQuizModal(false); setEditingQuiz(null); }} className="btn btn-secondary">Annulla</button>
+                <button type="submit" disabled={updatingQuiz} className="btn btn-primary">
+                  {updatingQuiz ? 'Salvataggio...' : 'Salva Modifiche'}
                 </button>
               </div>
             </form>
