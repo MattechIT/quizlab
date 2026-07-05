@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
+  ArrowLeft,
   ArrowRight, 
   HelpCircle, 
   BookOpen, 
@@ -19,7 +20,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 
-export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards, onRefresh }) {
+export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards, onRefresh, onBack }) {
   // Stati per il controllo dei modali di inserimento
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
@@ -390,40 +391,33 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
 
   return (
     <div className="container animate-fade-in" style={{ paddingBottom: '40px' }}>
-      {/* BANNER PRINCIPALE */}
-      <div className="card" style={{
-        background: 'linear-gradient(135deg, #121212 0%, #1a0f30 100%)',
-        borderColor: 'rgba(124, 58, 237, 0.15)',
-        padding: '32px',
-        marginBottom: '40px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '24px'
-      }}>
-        <div style={{ flex: '1', minWidth: '300px' }}>
-          <h2 style={{ fontSize: '2rem', marginBottom: '12px' }}><span className="gradient-text">Area Didattica</span></h2>
-          <p style={{ fontSize: '1.05rem', color: 'var(--text-secondary)', maxWidth: '600px' }}>
-            Seleziona un quiz d'esame oppure crea un percorso di test personalizzato. Puoi usare le flashcard per la memorizzazione dei termini chiave.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button onClick={() => setShowQuizModal(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Plus size={18} />
-            <span>Crea Quiz</span>
-          </button>
-          <button onClick={onViewFlashcards} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BookOpen size={18} style={{ color: 'var(--accent-hover)' }} />
-            <span>Studio Flashcards</span>
-          </button>
-        </div>
+      {/* HEADER DELLA GRIGLIA QUIZ */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+        <button 
+          onClick={onBack} 
+          className="btn btn-secondary" 
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px' }}
+        >
+          <ArrowLeft size={16} /> Torna
+        </button>
+
+        <button 
+          onClick={() => setShowQuizModal(true)} 
+          className="btn btn-primary" 
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px' }}
+        >
+          <Plus size={16} /> Crea Quiz
+        </button>
       </div>
 
-      {/* SEZIONE QUIZ */}
-      <h2 style={{ marginBottom: '24px', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <Trophy size={20} style={{ color: 'var(--accent)' }} /> Elenco Quiz Disponibili
-      </h2>
+      <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+        <h2 style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '1.5rem', marginBottom: '8px' }}>
+          <Trophy size={20} style={{ color: 'var(--accent)' }} /> Elenco Quiz Disponibili
+        </h2>
+        <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)' }}>
+          Seleziona un quiz d'esame per iniziare il test o creane uno personalizzato.
+        </p>
+      </div>
 
       <div style={{
         display: 'grid',

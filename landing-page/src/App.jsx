@@ -202,6 +202,7 @@ export default function App() {
             onSelectQuiz={handleSelectQuiz} 
             onViewFlashcards={() => navigateTo('flashcards')} 
             onRefresh={checkAuth}
+            onBack={() => navigateTo('dashboard')}
           />
         );
 
