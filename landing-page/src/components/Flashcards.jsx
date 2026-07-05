@@ -389,6 +389,22 @@ export default function Flashcards({ initialView = 'decks', activeDeck: propActi
     }
   };
 
+  const handleNext = (e) => {
+    e.stopPropagation();
+    setIsFlipped(false);
+    setTimeout(() => {
+      setCurrentIndex((prev) => (prev + 1) % deckCards.length);
+    }, 150);
+  };
+
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    setIsFlipped(false);
+    setTimeout(() => {
+      setCurrentIndex((prev) => (prev - 1 + deckCards.length) % deckCards.length);
+    }, 150);
+  };
+
   const handleBackNavigation = () => {
     if (currentView === 'study') {
       if (onBackDecks) {
