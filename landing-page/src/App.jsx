@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import DashboardHome from './pages/DashboardHome';
 import QuizSelection from './components/QuizSelection';
-import QuizRunner from './components/QuizRunner';
+import QuizRunner from './pages/QuizRunner';
 import Results from './pages/Results';
 import Flashcards from './components/Flashcards';
 import GlobalDialogs from './components/GlobalDialogs';
