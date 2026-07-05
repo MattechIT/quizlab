@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -130,6 +131,8 @@ export default function Flashcards({ onBack }) {
   }
 
   const currentCard = deck[currentIndex];
+  // Altezza dinamica: aumenta se è presente un'immagine per far spazio al fronte
+  const cardHeight = currentCard?.image_url ? '340px' : '280px';
 
   return (
     <div className="container animate-fade-in" style={{ maxWidth: '600px', paddingBottom: '40px' }}>
@@ -168,14 +171,19 @@ export default function Flashcards({ onBack }) {
         </div>
       ) : (
         <>
-          {/* 3D FLASHCARD */}
+          {/* 3D FLASHCARD (Con altezza regolata dinamicamente) */}
           <div 
             className={`perspective-container ${isFlipped ? 'is-flipped' : ''}`}
             onClick={() => setIsFlipped(!isFlipped)}
+            style={{ height: cardHeight, transition: 'height 0.3s ease' }}
           >
             <div className="flashcard-inner">
-              {/* FRONTE */}
-              <div className="flashcard-front">
+              {/* FRONTE: Contiene l'immagine e il termine */}
+              <div className="flashcard-front" style={{ 
+                paddingTop: '60px', 
+                paddingBottom: '50px', 
+                justifyContent: 'center' 
+              }}>
                 <span style={{
                   fontSize: '0.75rem',
                   fontWeight: '600',
@@ -192,17 +200,45 @@ export default function Flashcards({ onBack }) {
                   {currentCard?.category}
                 </span>
                 
-                <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--text-primary)', textAlign: 'center', padding: '0 20px', lineHeight: '1.3' }}>
+                <h3 style={{ 
+                  fontSize: currentCard?.image_url ? '1.25rem' : '1.5rem', 
+                  fontWeight: '600', 
+                  color: 'var(--text-primary)', 
+                  textAlign: 'center', 
+                  padding: '0 10px', 
+                  lineHeight: '1.3',
+                  margin: '0 0 16px 0'
+                }}>
                   {currentCard?.term}
                 </h3>
+
+                {currentCard?.image_url && (
+                  <img 
+                    src={currentCard.image_url} 
+                    alt={currentCard?.term}
+                    style={{
+                      maxHeight: '110px',
+                      maxWidth: '100%',
+                      objectFit: 'contain', // aspect ratio preservato senza tagli
+                      borderRadius: '8px',
+                      backgroundColor: '#0a0a0a',
+                      border: '1px solid var(--card-border)',
+                      padding: '4px'
+                    }}
+                  />
+                )}
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--accent-hover)', position: 'absolute', bottom: '20px' }}>
                   <RotateCw size={14} /> Clicca per girare
                 </div>
               </div>
 
-              {/* RETRO */}
-              <div className="flashcard-back">
+              {/* RETRO: Contiene solo la definizione (immagine rimossa per pulizia) */}
+              <div className="flashcard-back" style={{ 
+                paddingTop: '60px', 
+                paddingBottom: '50px', 
+                justifyContent: 'center' 
+              }}>
                 <span style={{
                   fontSize: '0.75rem',
                   fontWeight: '600',
@@ -219,18 +255,16 @@ export default function Flashcards({ onBack }) {
                   Definizione
                 </span>
                 
-                <p style={{ fontSize: '1rem', color: 'var(--text-primary)', textAlign: 'center', lineHeight: '1.6', padding: '0 10px', marginBottom: currentCard?.image_url ? '40px' : '0' }}>
+                <p style={{ 
+                  fontSize: '0.95rem', 
+                  color: 'var(--text-primary)', 
+                  textAlign: 'center', 
+                  lineHeight: '1.5', 
+                  padding: '0 10px',
+                  margin: 0
+                }}>
                   {currentCard?.definition}
                 </p>
-
-                {currentCard?.image_url && (
-                  <div style={{
-                    width: '100%', maxWrap: '200px', height: '80px',
-                    backgroundImage: `url(${currentCard.image_url})`,
-                    backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center',
-                    marginBottom: '20px'
-                  }}></div>
-                )}
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)', position: 'absolute', bottom: '20px' }}>
                   <RotateCw size={14} /> Clicca per tornare al fronte
@@ -265,13 +299,13 @@ export default function Flashcards({ onBack }) {
       )}
 
       {/* ==========================================
-         MODALE CREAZIONE FLASHCARD
+         MODALE CREAZIONE FLASHCARD (MAPPATO TRAMITE PORTALE)
          ========================================== */}
-      {showModal && (
+      {showModal && createPortal(
         <div style={{
           position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-          backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px'
+          backgroundColor: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px'
         }}>
           <div className="card animate-fade-in" style={{ maxWidth: '460px', width: '100%', padding: '28px', backgroundColor: '#121212', border: '1px solid var(--card-border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -340,7 +374,8 @@ export default function Flashcards({ onBack }) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
