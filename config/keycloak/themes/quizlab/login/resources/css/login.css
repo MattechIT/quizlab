@@ -1,18 +1,23 @@
 /* FOGLIO DI STILE CUSTOM PER SSO KEYCLOAK - QUIZLAB */
 
+html, body, .login-pf, .login-pf-page {
+    background: radial-gradient(circle at center, #180d2c 0%, #070707 100%) fixed !important;
+    background-color: #070707 !important;
+    background-attachment: fixed !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
 body, .login-pf-page {
     display: flex !important;
     flex-direction: column !important;
-    justify-content: center !important;
     align-items: center !important;
     min-height: 100vh !important;
-    background: radial-gradient(circle at center, #180d2c 0%, #070707 100%) fixed !important;
-    background-attachment: fixed !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 40px 16px !important; /* Spazio di sicurezza sopra, sotto e ai lati */
     font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif !important;
     color: #f4f4f5 !important;
-    margin: 0 !important;
-    padding: 24px 0 !important; /* Aggiunge un po' di spazio sopra e sotto per evitare tagli su schermi piccoli */
-    width: 100% !important;
 }
 
 /* Modale Centrato (Card principale di Keycloak) */
@@ -25,6 +30,9 @@ body, .login-pf-page {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5) !important;
     padding: 32px !important;
     max-width: 460px !important;
+    width: 100% !important;
+    margin-top: auto !important;   /* Trucco margin: auto per il centramento intelligente */
+    margin-bottom: auto !important;
 }
 
 /* Titolo dell'applicazione in testa */
