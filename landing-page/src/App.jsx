@@ -262,31 +262,6 @@ export default function App() {
 
           {user && (
             <div className="nav-links" style={{ alignItems: 'center' }}>
-              <a 
-                href="#" 
-                onClick={(e) => { e.preventDefault(); navigateTo('dashboard'); }} 
-                className={`nav-link ${currentPage === 'dashboard' ? 'active' : ''}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <LayoutDashboard size={16} /> Home
-              </a>
-              <a 
-                href="#" 
-                onClick={(e) => { e.preventDefault(); navigateTo('selection'); }} 
-                className={`nav-link ${['selection', 'quiz', 'results'].includes(currentPage) ? 'active' : ''}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <HelpCircle size={16} /> Quiz
-              </a>
-              <a 
-                href="#" 
-                onClick={(e) => { e.preventDefault(); navigateTo('flashcards'); }} 
-                className={`nav-link ${['flashcards', 'flashcards-study'].includes(currentPage) ? 'active' : ''}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <BookOpen size={16} /> Flashcards
-              </a>
-              
               <div style={{ width: '1px', height: '18px', backgroundColor: 'var(--card-border)', margin: '0 8px' }}></div>
               
               <div className="user-badge">
