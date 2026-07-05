@@ -1,0 +1,110 @@
+/* FOGLIO DI STILE CUSTOM PER SSO KEYCLOAK - QUIZLAB */
+
+body {
+    background: radial-gradient(circle at center, #180d2c 0%, #070707 100%) !important;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif !important;
+    color: #f4f4f5 !important;
+    margin: 0;
+    padding: 0;
+}
+
+/* Modale Centrato (Card principale di Keycloak) */
+.card-pf {
+    background-color: rgba(18, 18, 18, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5) !important;
+    padding: 32px !important;
+    max-width: 460px !important;
+}
+
+/* Titolo dell'applicazione in testa */
+#kc-header-wrapper {
+    color: #7c3aed !important;
+    font-weight: 700 !important;
+    font-size: 26px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    text-shadow: 0 0 15px rgba(124, 58, 237, 0.3) !important;
+    font-family: inherit !important;
+    text-align: center !important;
+    margin-bottom: 20px !important;
+}
+
+/* Campi di input di testo e password */
+input.form-control {
+    background-color: #09090b !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+input.form-control:focus {
+    border-color: #7c3aed !important;
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2) !important;
+    outline: none !important;
+}
+
+/* Label dei campi */
+label {
+    color: #a1a1aa !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+    margin-bottom: 6px !important;
+}
+
+/* Bottone di Login / Registrazione */
+.btn-primary {
+    background-color: #7c3aed !important;
+    border: 1px solid #7c3aed !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    padding: 10px 16px !important;
+    font-size: 14px !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease, border-color 0.15s ease !important;
+    width: 100% !important;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+    background-color: #6d28d9 !important;
+    border-color: #6d28d9 !important;
+}
+
+/* Collegamenti ipertestuali (Registrazione, Password dimenticata) */
+a {
+    color: #a78bfa !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    transition: color 0.15s ease !important;
+}
+
+a:hover {
+    color: #c084fc !important;
+    text-decoration: underline !important;
+}
+
+#kc-registration {
+    margin-top: 20px !important;
+    font-size: 13px !important;
+    text-align: center !important;
+    color: #71717a !important;
+}
+
+#kc-registration a {
+    margin-left: 4px !important;
+}
+
+/* Checkbox "Ricordami" */
+.checkbox label {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+}

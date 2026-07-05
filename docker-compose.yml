@@ -82,6 +82,7 @@ services:
       - gateway-net
     volumes:
       - ./config/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - ./config/keycloak/themes:/opt/keycloak/themes:ro
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.keycloak.rule=Host(`quizlab.techmatrix.it`) && PathPrefix(`/auth`)"

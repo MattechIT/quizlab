@@ -2,6 +2,8 @@
   "id": "QuizLab",
   "realm": "QuizLab",
   "enabled": true,
+  "registrationAllowed": true,
+  "loginTheme": "quizlab",
   "users": [
     {
       "username": "studente1",
