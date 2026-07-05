@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 
 // Importazione dei Sotto-Componenti Modulari scompattati
-import DeckGrid from './flashcard/DeckGrid';
-import StudySession from './flashcard/StudySession';
-import DeckFormModal from './flashcard/DeckFormModal';
-import ManageCardsModal from './flashcard/ManageCardsModal';
-import CardFormModal from './flashcard/CardFormModal';
+import DeckGrid from '../components/flashcard/DeckGrid';
+import StudySession from '../components/flashcard/StudySession';
+import DeckFormModal from '../components/flashcard/DeckFormModal';
+import ManageCardsModal from '../components/flashcard/ManageCardsModal';
+import CardFormModal from '../components/flashcard/CardFormModal';
 
 export default function Flashcards({ 
   initialView = 'decks', 

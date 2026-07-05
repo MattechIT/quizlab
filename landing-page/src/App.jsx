@@ -13,7 +13,7 @@ import DashboardHome from './pages/DashboardHome';
 import QuizSelection from './pages/QuizSelection';
 import QuizRunner from './pages/QuizRunner';
 import Results from './pages/Results';
-import Flashcards from './components/Flashcards';
+import Flashcards from './pages/Flashcards';
 import GlobalDialogs from './components/GlobalDialogs';
 
 export default function App() {
