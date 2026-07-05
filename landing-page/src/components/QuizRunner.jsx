@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  ArrowRight, 
-  Clock, 
-  HelpCircle, 
-  AlertTriangle,
-  RefreshCw
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import QuizRunnerHeader from './quizRunner/QuizRunnerHeader';
+import QuizLoadingState from './quizRunner/QuizLoadingState';
+import QuizErrorState from './quizRunner/QuizErrorState';
+import QuizQuestionCard from './quizRunner/QuizQuestionCard';
 
 export default function QuizRunner({ quizId, onComplete, onCancel }) {
   const [questions, setQuestions] = useState([]);
@@ -15,46 +13,43 @@ export default function QuizRunner({ quizId, onComplete, onCancel }) {
   const [selectedOption, setSelectedOption] = useState(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [userAnswers, setUserAnswers] = useState([]);
-  const [timeLeft, setTimeLeft] = useState(30); // 30 secondi a domanda
+  const [timeLeft, setTimeLeft] = useState(30);
 
   const timerRef = useRef(null);
 
-  // Carica le domande dal database tramite il Gateway delle API
   useEffect(() => {
     setLoading(true);
     fetch(`/api/v1/quiz/${quizId}/questions`)
-      .then(res => {
+      .then((res) => {
         if (!res.ok) {
-          throw new Error("Impossibile caricare le domande dal database.");
+          throw new Error('Impossibile caricare le domande dal database.');
         }
         return res.json();
       })
-      .then(data => {
+      .then((data) => {
         setQuestions(data.questions || []);
         setError(null);
         setLoading(false);
       })
-      .catch(err => {
-        console.error("[ERROR] Errore nel caricamento delle domande:", err);
+      .catch((err) => {
+        console.error('[ERROR] Errore nel caricamento delle domande:', err);
         setError(err.message);
         setLoading(false);
       });
   }, [quizId]);
 
-  // Gestione del Timer per le domande
   useEffect(() => {
     if (loading || error || questions.length === 0) return;
-    
-    // Inizializza il timer a 30s per la domanda corrente
+
     setTimeLeft(30);
-    
+
     if (timerRef.current) clearInterval(timerRef.current);
-    
+
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
-          handleNextQuestion(true); // Passa alla successiva per timeout
+          handleNextQuestion(true);
           return 0;
         }
         return prev - 1;
@@ -73,166 +68,57 @@ export default function QuizRunner({ quizId, onComplete, onCancel }) {
   const handleNextQuestion = (isTimeout = false) => {
     if (!isTimeout && selectedOption === null) return;
 
-    // Traccia la risposta data (o -1 in caso di timeout)
     const selected = isTimeout ? -1 : selectedOption;
     const updatedAnswers = [...userAnswers, selected];
     setUserAnswers(updatedAnswers);
 
-    // Controlla se la risposta data è corretta
     const currentQuestion = questions[currentQuestionIndex];
-    if (!isTimeout && selectedOption === currentQuestion.correct) {
+    const isCorrect = !isTimeout && selectedOption === currentQuestion.correct;
+    if (isCorrect) {
       setCorrectCount((prev) => prev + 1);
     }
 
-    // Pulisci lo stato di selezione per la prossima domanda
     setSelectedOption(null);
 
-    // Gestione transizione o completamento del quiz
     if (currentQuestionIndex + 1 < questions.length) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
-      // Fine quiz: calcola punteggio finale in percentuale ed invia ad App.jsx con le risposte date
-      const finalScore = Math.round(( (isTimeout ? correctCount : (selectedOption === currentQuestion.correct ? correctCount + 1 : correctCount)) / questions.length) * 100);
+      const finalCorrectCount = isCorrect ? correctCount + 1 : correctCount;
+      const finalScore = Math.round((finalCorrectCount / questions.length) * 100);
       if (timerRef.current) clearInterval(timerRef.current);
       onComplete(finalScore, updatedAnswers);
     }
   };
 
   if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '50vh' }}>
-        <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent)', marginBottom: '16px' }} />
-        <p style={{ color: 'var(--text-secondary)' }}>Caricamento domande dal database applicativo...</p>
-      </div>
-    );
+    return <QuizLoadingState message="Caricamento domande dal database applicativo..." />;
   }
 
   if (error || questions.length === 0) {
-    return (
-      <div className="container" style={{ maxWidth: '500px', textAlign: 'center', padding: '60px 0' }}>
-        <AlertTriangle size={48} style={{ color: 'var(--danger)', marginBottom: '16px' }} />
-        <h3>Errore di Connessione</h3>
-        <p style={{ color: 'var(--text-secondary)', marginTop: '8px', marginBottom: '24px' }}>
-          {error || "Nessuna domanda trovata per questo modulo nel database."}
-        </p>
-        <button onClick={onCancel} className="btn btn-secondary">Torna alla Dashboard</button>
-      </div>
-    );
+    return <QuizErrorState error={error} onCancel={onCancel} />;
   }
 
   const currentQuestion = questions[currentQuestionIndex];
-  const progressPercent = Math.round(((currentQuestionIndex) / questions.length) * 100);
+  const progressPercent = Math.round((currentQuestionIndex / questions.length) * 100);
   const timeProgressPercent = (timeLeft / 30) * 100;
 
   return (
     <div className="container animate-fade-in" style={{ maxWidth: '680px', paddingBottom: '40px' }}>
-      {/* HEADER QUIZ */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div>
-          <span style={{ fontSize: '0.85rem', color: 'var(--accent-hover)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Esecuzione Quiz
-          </span>
-          <h2 style={{ fontSize: '1.5rem', marginTop: '4px' }}>Domanda {currentQuestionIndex + 1} di {questions.length}</h2>
-        </div>
-        <button onClick={onCancel} className="btn btn-secondary" style={{ padding: '8px 14px', fontSize: '0.85rem' }}>
-          Annulla
-        </button>
-      </div>
+      <QuizRunnerHeader
+        currentQuestionIndex={currentQuestionIndex}
+        totalQuestions={questions.length}
+        onCancel={onCancel}
+      />
 
-      {/* BARRA DI PROGRESSO DOMANDE */}
-      <div style={{ width: '100%', height: '4px', backgroundColor: '#18181b', borderRadius: '2px', marginBottom: '32px', overflow: 'hidden', border: '1px solid #27272a' }}>
-        <div style={{ width: `${progressPercent}%`, height: '100%', backgroundColor: 'var(--accent)', transition: 'width 0.3s ease' }}></div>
-      </div>
+      <QuizQuestionCard
+        currentQuestion={currentQuestion}
+        selectedOption={selectedOption}
+        onOptionSelect={handleOptionSelect}
+        timeLeft={timeLeft}
+        progressPercent={progressPercent}
+        timeProgressPercent={timeProgressPercent}
+      />
 
-      {/* BOX DOMANDA */}
-      <div className="card" style={{ marginBottom: '24px' }}>
-        {/* TIMER */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-            Seleziona la risposta corretta:
-          </span>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: timeLeft <= 10 ? 'var(--danger)' : 'var(--text-secondary)' }}>
-            <Clock size={16} />
-            <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>{timeLeft}s</span>
-          </div>
-        </div>
-
-        {/* BARRA TIMER */}
-        <div style={{ width: '100%', height: '2px', backgroundColor: '#1f1f1f', marginBottom: '24px' }}>
-          <div style={{ 
-            width: `${timeProgressPercent}%`, 
-            height: '100%', 
-            backgroundColor: timeLeft <= 10 ? 'var(--danger)' : 'var(--accent-hover)', 
-            transition: 'width 1s linear' 
-          }}></div>
-        </div>
-
-        {/* IMMAGINE DIDATTICA OPZIONALE */}
-        {currentQuestion.image_url && (
-          <div style={{
-            width: '100%',
-            height: '240px',
-            backgroundImage: `url(${currentQuestion.image_url})`,
-            backgroundSize: 'contain',
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'center',
-            borderRadius: '8px',
-            backgroundColor: '#0a0a0a',
-            border: '1px solid var(--card-border)',
-            marginBottom: '24px'
-          }}></div>
-        )}
-
-        <h3 style={{ fontSize: '1.25rem', fontWeight: '500', lineHeight: '1.4', marginBottom: '32px', color: 'var(--text-primary)' }}>
-          {currentQuestion.q}
-        </h3>
-
-        {/* OPZIONI */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {currentQuestion.options.map((option, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleOptionSelect(idx)}
-              style={{
-                width: '100%',
-                padding: '16px',
-                borderRadius: '8px',
-                border: '1px solid',
-                borderColor: selectedOption === idx ? 'var(--accent)' : 'var(--card-border)',
-                backgroundColor: selectedOption === idx ? 'rgba(124, 58, 237, 0.05)' : '#161616',
-                color: selectedOption === idx ? 'var(--text-primary)' : 'var(--text-secondary)',
-                textAlign: 'left',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                transition: 'all var(--transition-fast)'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '50%',
-                  border: '2px solid',
-                  borderColor: selectedOption === idx ? 'var(--accent)' : 'var(--text-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.75rem',
-                  fontWeight: '700',
-                  color: selectedOption === idx ? 'var(--accent)' : 'var(--text-muted)'
-                }}>
-                  {String.fromCharCode(65 + idx)}
-                </div>
-                <span style={{ flex: 1 }}>{option}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* NAVIGAZIONE DOMANDE */}
       <div style={{ display: 'flex', justifyContent: 'end' }}>
         <button
           onClick={() => handleNextQuestion(false)}
@@ -240,7 +126,7 @@ export default function QuizRunner({ quizId, onComplete, onCancel }) {
           className="btn btn-primary"
           style={{ padding: '12px 24px' }}
         >
-          {currentQuestionIndex + 1 === questions.length ? 'Termina Quiz' : 'Prossima Domanda'} 
+          {currentQuestionIndex + 1 === questions.length ? 'Termina Quiz' : 'Prossima Domanda'}
           <ArrowRight size={16} />
         </button>
       </div>
