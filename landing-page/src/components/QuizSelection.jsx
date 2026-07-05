@@ -15,7 +15,8 @@ import {
   UserCheck,
   Edit3,
   Trash2,
-  Settings
+  Settings,
+  RefreshCw
 } from 'lucide-react';
 
 export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards, onRefresh }) {
