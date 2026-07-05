@@ -87,6 +87,7 @@ app.get('/api/v1/quiz/:id/questions', validateIdentity, async (req, res) => {
     res.json({
       quizId,
       questions: result.rows.map(row => ({
+        id: row.id,
         q: row.question_text,
         options: row.options, // pg serializza automaticamente il tipo JSONB in array JS
         correct: row.correct_option,

@@ -14,7 +14,8 @@ import {
   BookOpenCheck,
   UserCheck,
   Edit3,
-  Trash2
+  Trash2,
+  Settings
 } from 'lucide-react';
 
 export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards, onRefresh }) {
@@ -23,7 +24,7 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [selectedQuizIdForQuestion, setSelectedQuizIdForQuestion] = useState(null);
 
-  // Stati per il controllo del modale di modifica
+  // Stati per la gestione del quiz (Modifica metadati)
   const [showEditQuizModal, setShowEditQuizModal] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState(null);
 
@@ -49,10 +50,29 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
   const [explanation, setExplanation] = useState('');
   const [questionImageUrl, setQuestionImageUrl] = useState('');
 
+  // Stati per il pannello "Gestisci Domande"
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [manageQuiz, setManageQuiz] = useState(null);
+  const [manageQuestions, setManageQuestions] = useState([]);
+  const [loadingManageQuestions, setLoadingManageQuestions] = useState(false);
+
+  // Stati del form Modifica Domanda
+  const [showEditQuestionModal, setShowEditQuestionModal] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(null);
+  const [editQuestionText, setEditQuestionText] = useState('');
+  const [editOptA, setEditOptA] = useState('');
+  const [editOptB, setEditOptB] = useState('');
+  const [editOptC, setEditOptC] = useState('');
+  const [editOptD, setEditOptD] = useState('');
+  const [editCorrectOption, setEditCorrectOption] = useState(0);
+  const [editExplanation, setEditExplanation] = useState('');
+  const [editQuestionImageUrl, setEditQuestionImageUrl] = useState('');
+
   // Stati di caricamento
   const [submittingQuiz, setSubmittingQuiz] = useState(false);
   const [updatingQuiz, setUpdatingQuiz] = useState(false);
   const [submittingQuestion, setSubmittingQuestion] = useState(false);
+  const [updatingQuestion, setUpdatingQuestion] = useState(false);
 
   const getQuizMetadata = (id, createdBy) => {
     if (createdBy !== 'global') {
@@ -195,6 +215,105 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
     }
   };
 
+  // Caricamento domande per il pannello "Gestisci Domande"
+  const loadManageQuestions = async (quizId) => {
+    try {
+      setLoadingManageQuestions(true);
+      const res = await fetch(`/api/v1/quiz/${quizId}/questions`);
+      if (res.ok) {
+        const data = await res.json();
+        setManageQuestions(data.questions || []);
+      }
+    } catch (err) {
+      console.error("[ERROR] Impossibile caricare le domande del manager:", err);
+    } finally {
+      setLoadingManageQuestions(false);
+    }
+  };
+
+  // Apertura pannello "Gestisci Domande"
+  const handleOpenManage = (quiz) => {
+    setManageQuiz(quiz);
+    loadManageQuestions(quiz.id);
+    setShowManageModal(true);
+  };
+
+  // Eliminazione Domanda (DELETE)
+  const handleDeleteQuestion = async (questionId) => {
+    if (!window.confirm("Sei sicuro di voler eliminare questa domanda dal quiz?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/v1/questions/${questionId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        // Rinfresca il manager e la dashboard
+        await loadManageQuestions(manageQuiz.id);
+        if (onRefresh) onRefresh();
+      } else {
+        alert("Errore durante l'eliminazione della domanda.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Errore di rete.");
+    }
+  };
+
+  // Apertura form di modifica domanda
+  const handleEditQuestionClick = (question) => {
+    setEditingQuestion(question);
+    setEditQuestionText(question.q);
+    setEditOptA(question.options[0] || '');
+    setEditOptB(question.options[1] || '');
+    setEditOptC(question.options[2] || '');
+    setEditOptD(question.options[3] || '');
+    setEditCorrectOption(question.correct);
+    setEditExplanation(question.explanation || '');
+    setEditQuestionImageUrl(question.image_url || '');
+    setShowEditQuestionModal(true);
+  };
+
+  // Aggiornamento Domanda (PUT)
+  const handleUpdateQuestion = async (e) => {
+    e.preventDefault();
+    if (!editQuestionText || !editOptA || !editOptB || !editOptC || !editOptD || !editingQuestion) return;
+
+    try {
+      setUpdatingQuestion(true);
+      const response = await fetch(`/api/v1/questions/${editingQuestion.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          questionText: editQuestionText,
+          options: [editOptA, editOptB, editOptC, editOptD],
+          correctOption: parseInt(editCorrectOption),
+          explanation: editExplanation,
+          imageUrl: editQuestionImageUrl
+        })
+      });
+
+      if (response.ok) {
+        setShowEditQuestionModal(false);
+        setEditingQuestion(null);
+        // Rinfresca il manager e la dashboard
+        await loadManageQuestions(manageQuiz.id);
+        if (onRefresh) onRefresh();
+      } else {
+        alert("Errore durante la modifica della domanda.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Errore di rete.");
+    } finally {
+      setUpdatingQuestion(false);
+    }
+  };
+
   // Aggiunta Domanda al Quiz Personale (POST)
   const handleCreateQuestion = async (e) => {
     e.preventDefault();
@@ -227,7 +346,10 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
         setCorrectOption(0);
         setExplanation('');
         setQuestionImageUrl('');
-        // Rinfresca la lista
+        // Rinfresca la lista sia sul manager che sulla dashboard
+        if (manageQuiz) {
+          await loadManageQuestions(manageQuiz.id);
+        }
         if (onRefresh) onRefresh();
       } else {
         alert("Errore nell'aggiunta della domanda.");
@@ -379,15 +501,15 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
                 </span>
                 
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  {/* Se il quiz è personale, permetti di aggiungere domande */}
+                  {/* Se il quiz è personale, mostra il tasto "Gestisci" per modificare le domande */}
                   {!isGlobal && (
                     <button 
-                      onClick={() => { setSelectedQuizIdForQuestion(quiz.id); setShowQuestionModal(true); }}
+                      onClick={() => handleOpenManage(quiz)}
                       className="btn btn-secondary" 
                       style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                      title="Aggiungi domanda a questo quiz"
+                      title="Gestisci le domande inserite in questo quiz"
                     >
-                      <Plus size={14} /> Domanda
+                      <Settings size={14} /> Gestisci
                     </button>
                   )}
                   <button 
@@ -562,6 +684,222 @@ export default function QuizSelection({ quizzes, onSelectQuiz, onViewFlashcards,
                 <button type="button" onClick={() => { setShowEditQuizModal(false); setEditingQuiz(null); }} className="btn btn-secondary">Annulla</button>
                 <button type="submit" disabled={updatingQuiz} className="btn btn-primary">
                   {updatingQuiz ? 'Salvataggio...' : 'Salva Modifiche'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ==========================================
+         PANNELLO GESTIONE DOMANDE (MAPPATO TRAMITE PORTALE)
+         ========================================== */}
+      {showManageModal && manageQuiz && createPortal(
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9990, padding: '16px'
+        }}>
+          <div className="card animate-fade-in" style={{ 
+            maxWidth: '720px', width: '100%', padding: '28px', backgroundColor: '#121212', 
+            border: '1px solid var(--card-border)', maxHeight: '85vh', display: 'flex', flexDirection: 'column'
+          }}>
+            {/* Header del Manager */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <span style={{ fontSize: '0.8rem', color: 'var(--accent-hover)', fontWeight: '600', textTransform: 'uppercase' }}>Pannello Gestione</span>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: '600', marginTop: '2px' }}>Domande per: {manageQuiz.title}</h3>
+              </div>
+              <button onClick={() => { setShowManageModal(false); setManageQuiz(null); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Pulsante per aggiungere una nuova domanda a questo quiz */}
+            <div style={{ marginBottom: '20px' }}>
+              <button 
+                onClick={() => { setSelectedQuizIdForQuestion(manageQuiz.id); setShowQuestionModal(true); }}
+                className="btn btn-primary"
+                style={{ padding: '10px 18px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Plus size={16} /> Aggiungi Nuova Domanda
+              </button>
+            </div>
+
+            {/* Lista scrollabile delle domande */}
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingRight: '6px' }}>
+              {loadingManageQuestions ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0' }}>
+                  <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent)', marginBottom: '12px' }} />
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Caricamento domande...</p>
+                </div>
+              ) : manageQuestions.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 16px', border: '1px dashed var(--card-border)', borderRadius: '8px' }}>
+                  <HelpCircle size={32} style={{ color: 'var(--text-muted)', marginBottom: '12px' }} />
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Questo quiz non contiene ancora domande.</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px' }}>Clicca sul pulsante sopra per iniziare ad aggiungerne.</p>
+                </div>
+              ) : (
+                manageQuestions.map((q, idx) => (
+                  <div key={q.id || idx} style={{
+                    padding: '16px', backgroundColor: '#18181b', border: '1px solid var(--card-border)', borderRadius: '8px',
+                    position: 'relative', display: 'flex', flexDirection: 'column', gap: '12px'
+                  }}>
+                    {/* Numero domanda ed azioni rapide */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--accent-hover)', textTransform: 'uppercase' }}>
+                        Quesito #{idx + 1}
+                      </span>
+                      
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          onClick={() => handleEditQuestionClick(q)}
+                          style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
+                          title="Modifica domanda"
+                        >
+                          <Edit3 size={14} onMouseEnter={(e)=>e.currentTarget.style.color='#fff'} onMouseLeave={(e)=>e.currentTarget.style.color='var(--text-secondary)'} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteQuestion(q.id)}
+                          style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px' }}
+                          title="Elimina domanda"
+                        >
+                          <Trash2 size={14} style={{ opacity: 0.9 }} onMouseEnter={(e)=>e.currentTarget.style.opacity=1} onMouseLeave={(e)=>e.currentTarget.style.opacity=0.9} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Testo domanda */}
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: '500', color: 'var(--text-primary)', margin: 0, lineHeight: '1.4' }}>
+                      {q.q}
+                    </h4>
+
+                    {/* Anteprima Opzioni */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.8rem' }}>
+                      {q.options.map((opt, oIdx) => (
+                        <div key={oIdx} style={{ 
+                          padding: '6px 10px', borderRadius: '4px', backgroundColor: oIdx === q.correct ? 'rgba(16, 185, 129, 0.08)' : '#0d0d0d',
+                          border: '1px solid', borderColor: oIdx === q.correct ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.02)',
+                          color: oIdx === q.correct ? 'var(--success)' : 'var(--text-secondary)',
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                        }}>
+                          <strong>{String.fromCharCode(65 + oIdx)})</strong> {opt}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Info aggiuntive in anteprima */}
+                    <div style={{ display: 'flex', gap: '12px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {q.image_url && <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><ImageIcon size={12} /> Immagine Allegata</span>}
+                      {q.explanation && <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><BookOpenCheck size={12} /> Spiegazione Presente</span>}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ==========================================
+         MODALE MODIFICA DOMANDA (MAPPATO TRAMITE PORTALE)
+         ========================================== */}
+      {showEditQuestionModal && editingQuestion && createPortal(
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px'
+        }}>
+          <div className="card animate-fade-in" style={{ maxWidth: '540px', width: '100%', padding: '28px', backgroundColor: '#121212', border: '1px solid var(--card-border)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Modifica Domanda</h3>
+              <button onClick={() => { setShowEditQuestionModal(false); setEditingQuestion(null); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateQuestion} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Testo della Domanda *</label>
+                <textarea 
+                  required value={editQuestionText} onChange={(e) => setEditQuestionText(e.target.value)}
+                  placeholder="Es. Qual è il comando per avviare i container in background?" rows={2}
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', resize: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                />
+              </div>
+
+              {/* OPZIONI */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Opzioni di Risposta *</label>
+                <input 
+                  type="text" required value={editOptA} onChange={(e) => setEditOptA(e.target.value)} placeholder="Opzione A"
+                  style={{ backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '8px 12px', color: '#fff', fontSize: '0.9rem', outline: 'none' }}
+                />
+                <input 
+                  type="text" required value={editOptB} onChange={(e) => setEditOptB(e.target.value)} placeholder="Opzione B"
+                  style={{ backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '8px 12px', color: '#fff', fontSize: '0.9rem', outline: 'none' }}
+                />
+                <input 
+                  type="text" required value={editOptC} onChange={(e) => setEditOptC(e.target.value)} placeholder="Opzione C"
+                  style={{ backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '8px 12px', color: '#fff', fontSize: '0.9rem', outline: 'none' }}
+                />
+                <input 
+                  type="text" required value={editOptD} onChange={(e) => setEditOptD(e.target.value)} placeholder="Opzione D"
+                  style={{ backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '8px 12px', color: '#fff', fontSize: '0.9rem', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Risposta Corretta *</label>
+                <select 
+                  value={editCorrectOption} onChange={(e) => setEditCorrectOption(e.target.value)}
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                >
+                  <option value={0}>Opzione A</option>
+                  <option value={1}>Opzione B</option>
+                  <option value={2}>Opzione C</option>
+                  <option value={3}>Opzione D</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500' }}>Spiegazione Teorica (Mostrata a fine quiz)</label>
+                <textarea 
+                  value={editExplanation} onChange={(e) => setEditExplanation(e.target.value)}
+                  placeholder="Es. Il flag -d permette l'esecuzione del container in modalità detached (sfondo)..." rows={2}
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', resize: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <ImageIcon size={14} /> URL Immagine per la Domanda (Opzionale)
+                </label>
+                <input 
+                  type="url" value={editQuestionImageUrl} onChange={(e) => setEditQuestionImageUrl(e.target.value)}
+                  placeholder="https://esempio.it/diagramma.png"
+                  style={{
+                    backgroundColor: '#0a0a0a', border: '1px solid var(--card-border)', borderRadius: '6px',
+                    padding: '10px 12px', color: '#fff', fontSize: '0.95rem', outline: 'none', fontFamily: 'var(--font-sans)'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'end', gap: '12px', marginTop: '8px' }}>
+                <button type="button" onClick={() => { setShowEditQuestionModal(false); setEditingQuestion(null); }} className="btn btn-secondary">Annulla</button>
+                <button type="submit" disabled={updatingQuestion} className="btn btn-primary">
+                  {updatingQuestion ? 'Salvataggio...' : 'Salva Domanda'}
                 </button>
               </div>
             </form>
