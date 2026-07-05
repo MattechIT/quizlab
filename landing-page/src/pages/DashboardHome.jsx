@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  TrendingUp, 
-  Award, 
-  CheckCircle2, 
-  ArrowRight, 
-  HelpCircle, 
-  BookOpen, 
-  Calendar,
-  RefreshCw
+  TrendingUp,
+  Award,
+  CheckCircle2,
+  HelpCircle,
+  BookOpen
 } from 'lucide-react';
+import StatCard from '../components/dashboard/StatCard';
+import QuickActionCard from '../components/dashboard/QuickActionCard';
+import RecentActivity from '../components/dashboard/RecentActivity';
 
 export default function DashboardHome({ user, quizzes, onNavigateTo }) {
   const [history, setHistory] = useState([]);
@@ -83,38 +83,27 @@ export default function DashboardHome({ user, quizzes, onNavigateTo }) {
         gap: '24px',
         marginBottom: '36px'
       }}>
-        {/* STAT 1: COMPLETATI */}
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '24px' }}>
-          <div style={{ padding: '12px', borderRadius: '10px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}>
-            <CheckCircle2 size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: '600' }}>Quiz Completati</span>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: '700', marginTop: '4px' }}>{totalCompleted}</h3>
-          </div>
-        </div>
-
-        {/* STAT 2: MEDIA PUNTEGGIO */}
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '24px' }}>
-          <div style={{ padding: '12px', borderRadius: '10px', backgroundColor: 'rgba(124, 58, 237, 0.1)', color: 'var(--accent-hover)' }}>
-            <TrendingUp size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: '600' }}>Punteggio Medio</span>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: '700', marginTop: '4px' }}>{averageScore}%</h3>
-          </div>
-        </div>
-
-        {/* STAT 3: MAX PUNTEGGIO */}
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '24px' }}>
-          <div style={{ padding: '12px', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
-            <Award size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: '600' }}>Voto Massimo</span>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: '700', marginTop: '4px' }}>{maxScore}%</h3>
-          </div>
-        </div>
+        <StatCard
+          icon={CheckCircle2}
+          label="Quiz Completati"
+          value={totalCompleted}
+          iconBackground="rgba(16, 185, 129, 0.1)"
+          iconColor="var(--success)"
+        />
+        <StatCard
+          icon={TrendingUp}
+          label="Punteggio Medio"
+          value={`${averageScore}%`}
+          iconBackground="rgba(124, 58, 237, 0.1)"
+          iconColor="var(--accent-hover)"
+        />
+        <StatCard
+          icon={Award}
+          label="Voto Massimo"
+          value={`${maxScore}%`}
+          iconBackground="rgba(245, 158, 11, 0.1)"
+          iconColor="#f59e0b"
+        />
       </div>
 
       {/* SEZIONE CENTRALE: AVVIO RAPIDO E ATTIVITA RECENTI */}
@@ -129,94 +118,28 @@ export default function DashboardHome({ user, quizzes, onNavigateTo }) {
           <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '16px' }}>Avvio Rapido</h3>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-            
-            {/* CARD QUIZ */}
-            <div 
+            <QuickActionCard
+              icon={HelpCircle}
+              title="Mettiti alla prova"
+              description="Esegui test a scelta multipla sui moduli di Virtualizzazione, Docker, Kubernetes e Service Mesh."
               onClick={() => onNavigateTo('selection')}
-              className="card card-hover" 
-              style={{ padding: '24px', cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%' }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <span style={{ padding: '8px', borderRadius: '8px', backgroundColor: 'rgba(124, 58, 237, 0.1)', color: 'var(--accent-hover)' }}>
-                  <HelpCircle size={22} />
-                </span>
-                <ArrowRight size={16} style={{ color: 'var(--text-muted)' }} />
-              </div>
-              <h4 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '8px' }}>Mettiti alla prova</h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', flex: 1, lineHeight: '1.4' }}>
-                Esegui test a scelta multipla sui moduli di Virtualizzazione, Docker, Kubernetes e Service Mesh.
-              </p>
-            </div>
-
-            {/* CARD FLASHCARDS */}
-            <div 
+            />
+            <QuickActionCard
+              icon={BookOpen}
+              title="Studia con le Flashcards"
+              description="Memorizza concetti e termini chiave in modo visivo e tridimensionale utilizzando i mazzi di studio."
               onClick={() => onNavigateTo('flashcards')}
-              className="card card-hover" 
-              style={{ padding: '24px', cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%' }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <span style={{ padding: '8px', borderRadius: '8px', backgroundColor: 'rgba(124, 58, 237, 0.1)', color: 'var(--accent-hover)' }}>
-                  <BookOpen size={22} />
-                </span>
-                <ArrowRight size={16} style={{ color: 'var(--text-muted)' }} />
-              </div>
-              <h4 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '8px' }}>Studia con le Flashcards</h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', flex: 1, lineHeight: '1.4' }}>
-                Memorizza concetti e termini chiave in modo visivo e tridimensionale utilizzando i mazzi di studio.
-              </p>
-            </div>
-
+            />
           </div>
         </div>
 
         {/* BLOCCO 2: ATTIVITÀ RECENTI */}
-        <div>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '16px' }}>Attività Recenti</h3>
-          
-          {loading ? (
-            <div className="card" style={{ display: 'flex', justifyContent: 'center', padding: '30px 0' }}>
-              <RefreshCw size={20} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent)' }} />
-            </div>
-          ) : history.length === 0 ? (
-            <div className="card" style={{ padding: '30px', textAlign: 'center' }}>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Nessuna attività registrata. Inizia subito un quiz per tracciare i tuoi punteggi!</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {history.slice(0, 3).map((item) => (
-                <div key={item.id} className="card" style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '16px 20px',
-                  backgroundColor: '#111113'
-                }}>
-                  <div>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: '600', margin: 0 }}>
-                      {getQuizTitle(item.quiz_id)}
-                    </h4>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                      <Calendar size={12} /> {formatDate(item.completed_at)}
-                    </span>
-                  </div>
-                  
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{
-                      fontSize: '0.95rem',
-                      fontWeight: '700',
-                      color: item.score >= 60 ? 'var(--success)' : 'var(--danger)'
-                    }}>
-                      {item.score}%
-                    </span>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                      {item.score >= 60 ? 'Superato' : 'Non Superato'}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <RecentActivity
+          history={history}
+          loading={loading}
+          getQuizTitle={getQuizTitle}
+          formatDate={formatDate}
+        />
       </div>
     </div>
   );
