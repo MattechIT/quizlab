@@ -9,7 +9,7 @@ import {
   Shield,
   LayoutDashboard
 } from 'lucide-react';
-import DashboardHome from './components/DashboardHome';
+import DashboardHome from './pages/DashboardHome';
 import QuizSelection from './components/QuizSelection';
 import QuizRunner from './components/QuizRunner';
 import Results from './components/Results';
