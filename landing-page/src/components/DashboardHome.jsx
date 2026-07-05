@@ -59,7 +59,7 @@ export default function DashboardHome({ user, quizzes, onNavigateTo }) {
   };
 
   return (
-    <div className="container animate-fade-in" style={{ paddingBottom: '40px' }}>
+    <div className="container animate-fade-in" style={{ paddingBottom: '40px', paddingTop: '16px' }}>
       {/* SEZIONE GREETING */}
       <div className="card" style={{
         background: 'linear-gradient(135deg, #121212 0%, #1c0f30 100%)',
