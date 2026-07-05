@@ -24,14 +24,23 @@ CREATE TABLE IF NOT EXISTS questions (
     image_url VARCHAR(500) -- Immagine didattica opzionale per la domanda
 );
 
--- Tabella delle Flashcard per lo studio teorico
+-- Tabella dei Mazzi di Flashcards
+CREATE TABLE IF NOT EXISTS flashcard_decks (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    created_by VARCHAR(255) DEFAULT 'global' -- Identifica il proprietario del mazzo ('global' o username)
+);
+
+-- Tabella delle Flashcard per lo studio teorico (collegate ai mazzi)
 CREATE TABLE IF NOT EXISTS flashcards (
     id SERIAL PRIMARY KEY,
-    category VARCHAR(100) NOT NULL,
+    deck_id INT REFERENCES flashcard_decks(id) ON DELETE CASCADE,
+    category VARCHAR(100), -- Opzionale (eredita di default il titolo del mazzo se omessa)
     term VARCHAR(255) NOT NULL,
     definition TEXT NOT NULL,
     created_by VARCHAR(255) DEFAULT 'global', -- Identifica il proprietario della flashcard
-    image_url VARCHAR(500) -- Immagine esplicativa sul retro
+    image_url VARCHAR(500) -- Immagine esplicativa sul fronte
 );
 
 -- Tabella dello Storico Punteggi (utilizzata dal microservizio api-stats)
@@ -80,7 +89,7 @@ INSERT INTO questions (quiz_id, question_text, options, correct_option, explanat
 (2, 'Cos''è un''immagine Docker definita ''distroless''?', '["Un container privo di indirizzo IP", "Un''immagine minimale che contiene esclusivamente l''applicazione e le sue dipendenze, senza shell Bash o utility di sistema", "Un''immagine corrotta che non può essere avviata", "Un container che non salva log su disco"]', 1, 'Le immagini distroless contengono solo l''applicazione e le dipendenze minime di sistema. Non ospitando shell (sh/bash) né utility comuni come cat o curl, minimizzano la superficie d''attacco di sicurezza.'),
 (2, 'In Docker Compose, configurare ''network_mode: service:api-content'' su un container sidecar comporta:', '["Che il sidecar condivide l''interfaccia di rete (e l''interfaccia loopback/localhost) del servizio api-content", "Che il sidecar gestisce il DNS del database", "Che api-content viene spento all''avvio del sidecar", "Che i log dei due container vengono uniti in un unico file fisico"]', 0, 'Il sidecar viene inserito nello stesso identico namespace di rete di api-content. Questo consente loro di parlare tramite localhost, in modo che il sidecar possa intercettare e gestire il traffico in trasparenza.');
 
--- 3. Inizializzazione Domande: Service Mesh ed Envoy (quiz_id = 3)
+-- 4. Inizializzazione Domande: Service Mesh ed Envoy (quiz_id = 3)
 INSERT INTO questions (quiz_id, question_text, options, correct_option, explanation) VALUES
 (3, 'A quale livello del modello OSI opera principalmente il proxy Envoy per gestire e ispezionare il traffico delle API?', '["Livello 3 (Rete)", "Livello 4 (Trasporto)", "Livello 7 (Applicazione - HTTP, gRPC, TLS)", "Livello 2 (Collegamento Dati)"]', 2, 'Envoy opera principalmente a Livello 7. Ciò gli consente di comprendere le richieste HTTP (es. percorsi URI, intestazioni) e gRPC, oltre che di gestire la terminazione e validazione dei tunnel TLS.'),
 (3, 'Qual è il meccanismo con cui la Service Mesh implementa l''autenticazione mutua (mTLS) est-ovest?', '["Inserendo una password in chiaro in ogni header HTTP", "Entrambi i proxy (client e server) convalidano a vicenda i rispettivi certificati crittografici X.509 firmati dalla stessa CA fidata", "Usando una rete VPN IPsec", "Bloccando le porte TCP tramite iptables"]', 1, 'In una Service Mesh con mTLS, sia il proxy di invio (client) che quello di ricezione (server) presentano e convalidano reciprocamente i propri certificati X.509 firmati da una CA comune prima di scambiare dati.'),
@@ -93,21 +102,31 @@ INSERT INTO questions (quiz_id, question_text, options, correct_option, explanat
 (3, 'Perché in una Service Mesh Zero-Trust l''applicazione backend (es. api-stats) viene configurata per ascoltare su 127.0.0.1?', '["Per risparmiare RAM sull''LXC", "Per impedire che altri container della rete bypassino il sidecar Envoy, forzando tutto il traffico a passare dal controllo mTLS", "Perché non ha i driver per la scheda di rete Docker", "Per velocizzare le query del database"]', 1, 'Associando il backend a localhost (127.0.0.1), l''app non risponderà ad altre interfacce di rete. L''unico modo per contattarla è passare dal proxy locale Envoy, garantendo che mTLS sia ineludibile.'),
 (3, 'Quale byte iniziale indica che stiamo catturando un pacchetto di tipo ''TLS Application Data'' (cifrato) in tcpdump?', '["0x16 (TLS Handshake)", "0x17 (TLS Application Data)", "0x01 (Client Hello)", "0x08 (HTTP Get)"]', 1, 'Il byte 0x17 (decimale 23) identifica i record TLS che trasportano "Application Data" cifrati. I record di handshake (es. Client Hello) iniziano invece con il byte 0x16 (decimale 22).');
 
--- Svuota le vecchie flashcard per ri-popolare con la nuova colonna created_by
+-- 5. Inizializzazione Mazzi di Flashcard Globali
+INSERT INTO flashcard_decks (id, title, description, created_by) VALUES
+(1, 'Virtualizzazione & Hypervisor', 'Termini fondamentali su Hypervisor Tipo-1 e 2, KVM, SR-IOV e memory ballooning.', 'global'),
+(2, 'Docker & Containerization', 'Concetti su Namespaces, cgroups, configurazioni Dockerfile ed overlay2.', 'global'),
+(3, 'Service Mesh & Envoy', 'Architetture Zero-Trust, proxy Envoy, sidecar pattern e TLS bidirezionale.', 'global')
+ON CONFLICT (id) DO UPDATE SET 
+  title = EXCLUDED.title, 
+  description = EXCLUDED.description;
+
+-- Svuota le vecchie flashcard per ri-popolarle con la nuova chiave esterna deck_id
 TRUNCATE TABLE flashcards CASCADE;
 
--- 5. Inizializzazione Flashcards Globali
-INSERT INTO flashcards (category, term, definition, created_by) VALUES
-('Hypervisor', 'Hypervisor Tipo-1 (Bare Metal)', 'Eseguito direttamente sul ferro (hardware fisico). Offre prestazioni massime e isolamento sicuro. Esempi commerciali includono VMware ESXi e Proxmox VE (KVM).', 'global'),
-('Hypervisor', 'Hypervisor Tipo-2 (Hosted)', 'Eseguito come applicazione sopra un Sistema Operativo host (es. Windows, macOS). Ha un sovraccarico maggiore dovuto al kernel sottostante. Esempio classico: VirtualBox.', 'global'),
-('Containerization', 'Namespaces di Linux', 'Una feature del kernel Linux che isola le risorse globali del sistema per un gruppo di processi. Fornisce l''illusione di un OS dedicato (es. isolando pid, net, mnt, uts, ipc, user).', 'global'),
-('Containerization', 'Control Groups (cgroups)', 'Una feature del kernel Linux che limita, alloca e monitora l''utilizzo delle risorse fisiche (CPU, RAM, I/O su disco, rete) per i container, impedendo che uno saturi l''intero server.', 'global'),
-('Service Mesh', 'Mutual TLS (mTLS)', 'Protocollo di sicurezza che garantisce l''autenticazione a due vie: sia il client che il server verificano reciprocamente i propri certificati X.509 prima di avviare il tunnel cifrato.', 'global'),
-('Service Mesh', 'Envoy Proxy (Sidecar Pattern)', 'Proxy ad alte prestazioni distribuito a fianco di un''applicazione. Intercetta tutto il traffico di rete in entrata ed uscita (L7) per applicare mTLS, routing e tracciamento metriche.', 'global');
+-- 6. Inizializzazione Flashcards Globali (collegate ai rispettivi mazzi)
+INSERT INTO flashcards (deck_id, category, term, definition, created_by) VALUES
+(1, 'Hypervisor', 'Hypervisor Tipo-1 (Bare Metal)', 'Eseguito direttamente sul ferro (hardware fisico). Offre prestazioni massime e isolamento sicuro. Esempi commerciali includono VMware ESXi e Proxmox VE (KVM).', 'global'),
+(1, 'Hypervisor', 'Hypervisor Tipo-2 (Hosted)', 'Eseguito come applicazione sopra un Sistema Operativo host (es. Windows, macOS). Ha un sovraccarico maggiore dovuto al kernel sottostante. Esempio classico: VirtualBox.', 'global'),
+(2, 'Containerization', 'Namespaces di Linux', 'Una feature del kernel Linux che isola le risorse globali del sistema per un gruppo di processi. Fornisce l''illusione di un OS dedicato (es. isolando pid, net, mnt, uts, ipc, user).', 'global'),
+(2, 'Containerization', 'Control Groups (cgroups)', 'Una feature del kernel Linux che limita, alloca e monitora l''utilizzo delle risorse fisiche (CPU, RAM, I/O su disco, rete) per i container, impedendo che uno saturi l''intero server.', 'global'),
+(3, 'Service Mesh', 'Mutual TLS (mTLS)', 'Protocollo di sicurezza che garantisce l''autenticazione a due vie: sia il client che il server verificano reciprocamente i propri certificati X.509 prima di avviare il tunnel cifrato.', 'global'),
+(3, 'Service Mesh', 'Envoy Proxy (Sidecar Pattern)', 'Proxy ad alte prestazioni distribuito a fianco di un''applicazione. Intercetta tutto il traffico di rete in entrata ed uscita (L7) per applicare mTLS, routing e tracciamento metriche.', 'global');
 
 -- ==========================================================================
 -- RISINCRONIZZAZIONE DELLE SEQUENZE AUTOINCREMENTALI (setval)
 -- ==========================================================================
 SELECT setval('quizzes_id_seq', (SELECT MAX(id) FROM quizzes));
 SELECT setval('questions_id_seq', COALESCE((SELECT MAX(id) FROM questions), 1));
+SELECT setval('flashcard_decks_id_seq', (SELECT MAX(id) FROM flashcard_decks));
 SELECT setval('flashcards_id_seq', COALESCE((SELECT MAX(id) FROM flashcards), 1));
