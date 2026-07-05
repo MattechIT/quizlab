@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight } from 'lucide-react';
-import QuizRunnerHeader from './quizRunner/QuizRunnerHeader';
-import QuizLoadingState from './quizRunner/QuizLoadingState';
-import QuizErrorState from './quizRunner/QuizErrorState';
-import QuizQuestionCard from './quizRunner/QuizQuestionCard';
+import QuizRunnerHeader from '../components/quizRunner/QuizRunnerHeader';
+import QuizLoadingState from '../components/quizRunner/QuizLoadingState';
+import QuizErrorState from '../components/quizRunner/QuizErrorState';
+import QuizQuestionCard from '../components/quizRunner/QuizQuestionCard';
 
 export default function QuizRunner({ quizId, onComplete, onCancel }) {
   const [questions, setQuestions] = useState([]);
