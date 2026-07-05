@@ -19,7 +19,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [quizzes, setQuizzes] = useState([]);
   const [activeQuizId, setActiveQuizId] = useState(null);
-  const [lastQuizResult, setLastQuizResult] = useState({ quizId: null, score: 0 });
+  const [lastQuizResult, setLastQuizResult] = useState({ quizId: null, score: 0, userAnswers: [] });
 
   // Controlla se la sessione OIDC è attiva chiamando l'API dei quiz protetta
   const checkAuth = async () => {
@@ -51,8 +51,8 @@ export default function App() {
     setCurrentPage('quiz');
   };
 
-  const handleQuizComplete = (score) => {
-    setLastQuizResult({ quizId: activeQuizId, score });
+  const handleQuizComplete = (score, userAnswers) => {
+    setLastQuizResult({ quizId: activeQuizId, score, userAnswers });
     setCurrentPage('results');
   };
 
@@ -137,6 +137,7 @@ export default function App() {
           <Results 
             quizId={lastQuizResult.quizId} 
             score={lastQuizResult.score} 
+            userAnswers={lastQuizResult.userAnswers}
             username={user?.username} 
             onRestart={() => setCurrentPage('selection')} 
           />

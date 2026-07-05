@@ -14,6 +14,7 @@ export default function QuizRunner({ quizId, onComplete, onCancel }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [correctCount, setCorrectCount] = useState(0);
+  const [userAnswers, setUserAnswers] = useState([]);
   const [timeLeft, setTimeLeft] = useState(30); // 30 secondi a domanda
 
   const timerRef = useRef(null);
@@ -72,6 +73,11 @@ export default function QuizRunner({ quizId, onComplete, onCancel }) {
   const handleNextQuestion = (isTimeout = false) => {
     if (!isTimeout && selectedOption === null) return;
 
+    // Traccia la risposta data (o -1 in caso di timeout)
+    const selected = isTimeout ? -1 : selectedOption;
+    const updatedAnswers = [...userAnswers, selected];
+    setUserAnswers(updatedAnswers);
+
     // Controlla se la risposta data è corretta
     const currentQuestion = questions[currentQuestionIndex];
     if (!isTimeout && selectedOption === currentQuestion.correct) {
@@ -85,10 +91,10 @@ export default function QuizRunner({ quizId, onComplete, onCancel }) {
     if (currentQuestionIndex + 1 < questions.length) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
-      // Fine quiz: calcola punteggio finale in percentuale ed invia ad App.jsx
+      // Fine quiz: calcola punteggio finale in percentuale ed invia ad App.jsx con le risposte date
       const finalScore = Math.round(( (isTimeout ? correctCount : (selectedOption === currentQuestion.correct ? correctCount + 1 : correctCount)) / questions.length) * 100);
       if (timerRef.current) clearInterval(timerRef.current);
-      onComplete(finalScore);
+      onComplete(finalScore, updatedAnswers);
     }
   };
 
@@ -161,6 +167,22 @@ export default function QuizRunner({ quizId, onComplete, onCancel }) {
             transition: 'width 1s linear' 
           }}></div>
         </div>
+
+        {/* IMMAGINE DIDATTICA OPZIONALE */}
+        {currentQuestion.image_url && (
+          <div style={{
+            width: '100%',
+            height: '240px',
+            backgroundImage: `url(${currentQuestion.image_url})`,
+            backgroundSize: 'contain',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+            borderRadius: '8px',
+            backgroundColor: '#0a0a0a',
+            border: '1px solid var(--card-border)',
+            marginBottom: '24px'
+          }}></div>
+        )}
 
         <h3 style={{ fontSize: '1.25rem', fontWeight: '500', lineHeight: '1.4', marginBottom: '32px', color: 'var(--text-primary)' }}>
           {currentQuestion.q}
