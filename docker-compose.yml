@@ -92,6 +92,28 @@ services:
     depends_on:
       - postgres-auth
 
+  keycloak-setup:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: quiz-keycloak-setup
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        echo "Attesa che Keycloak sia pronto..."
+        until /opt/keycloak/bin/kcadm.sh config credentials --server http://keycloak:8080/auth --realm master --user admin --password "$$KEYCLOAK_ADMIN_PASSWORD" > /dev/null 2>&1; do
+          sleep 2
+        done
+        echo "Keycloak pronto, configurazione client secret..."
+        CLIENT_ID=$$(/opt/keycloak/bin/kcadm.sh get clients -r QuizLab -q clientId=oauth2-proxy-client --fields id --format csv | tr -d "\r")
+        /opt/keycloak/bin/kcadm.sh update clients/$$CLIENT_ID -r QuizLab -s secret="$$OAUTH2_PROXY_CLIENT_SECRET"
+        echo "Configurazione completata!"
+    environment:
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_CLIENT_SECRET}
+    networks:
+      - auth-net
+    depends_on:
+      - keycloak
+
   oauth2-proxy:
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
     container_name: quiz-oauth2-proxy
@@ -119,7 +141,8 @@ services:
       - "traefik.http.routers.oauth2.entrypoints=web"
       - "traefik.http.services.oauth2.loadbalancer.server.port=4180"
     depends_on:
-      - keycloak
+      keycloak-setup:
+        condition: service_completed_successfully
 
   landing-page:
     build: ./landing-page

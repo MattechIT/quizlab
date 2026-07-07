@@ -25,7 +25,7 @@
       "clientId": "oauth2-proxy-client",
       "name": "OAuth2 Proxy Client",
       "enabled": true,
-      "secret": "${env.OAUTH2_PROXY_CLIENT_SECRET}",
+      "secret": "PLACEHOLDER_SECRET_DO_NOT_COMMIT",
       "protocol": "openid-connect",
       "publicClient": false,
       "standardFlowEnabled": true,
