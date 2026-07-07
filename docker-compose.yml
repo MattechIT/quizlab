@@ -103,7 +103,13 @@ services:
           sleep 2
         done
         echo "Keycloak pronto, configurazione client secret..."
-        CLIENT_ID=$$(/opt/keycloak/bin/kcadm.sh get clients --config /tmp/kcadm.config -r QuizLab -q clientId=oauth2-proxy-client --fields id --format csv | tail -n +2 | tr -d '"' | tr -d '\r')
+        CLIENT_ID=$$(/opt/keycloak/bin/kcadm.sh get clients --config /tmp/kcadm.config -r QuizLab --fields id,clientId --format csv | grep "oauth2-proxy-client" | cut -d, -f1 | tr -d '"' | tr -d '\r')
+        
+        if [ -z "$$CLIENT_ID" ]; then
+          echo "[ERROR] Impossibile recuperare il CLIENT_ID per oauth2-proxy-client!"
+          exit 1
+        fi
+        
         echo "CLIENT_ID trovato: $$CLIENT_ID"
         /opt/keycloak/bin/kcadm.sh update clients/$$CLIENT_ID --config /tmp/kcadm.config -r QuizLab -s secret="$$OAUTH2_PROXY_CLIENT_SECRET"
         echo "Configurazione completata!"
