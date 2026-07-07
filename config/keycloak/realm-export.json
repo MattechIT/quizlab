@@ -25,16 +25,16 @@
       "clientId": "oauth2-proxy-client",
       "name": "OAuth2 Proxy Client",
       "enabled": true,
-      "secret": "OAuth2ProxyClientSecretKey123!",
+      "secret": "${env.OAUTH2_PROXY_CLIENT_SECRET}",
       "protocol": "openid-connect",
       "publicClient": false,
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "redirectUris": [
-        "https://quizlab.techmatrix.it/oauth2/callback"
+        "*"
       ],
       "webOrigins": [
-        "https://quizlab.techmatrix.it"
+        "*"
       ],
       "defaultClientScopes": [
         "web-origins",

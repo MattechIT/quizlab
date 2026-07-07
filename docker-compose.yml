@@ -75,8 +75,9 @@ services:
       KC_DB_PASSWORD: ${DB_AUTH_PASSWORD}
       KC_PROXY_HEADERS: xforwarded
       KC_HTTP_RELATIVE_PATH: /auth
-      KC_HOSTNAME_URL: https://quizlab.techmatrix.it/auth
+      KC_HOSTNAME_URL: https://${DOMAIN}/auth
       KC_HTTP_ENABLED: "true"
+      OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_CLIENT_SECRET}
     networks:
       - auth-net
       - gateway-net
@@ -85,7 +86,7 @@ services:
       - ./config/keycloak/themes:/opt/keycloak/themes:ro
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.keycloak.rule=Host(`quizlab.techmatrix.it`) && PathPrefix(`/auth`)"
+      - "traefik.http.routers.keycloak.rule=Host(`${DOMAIN}`) && PathPrefix(`/auth`)"
       - "traefik.http.routers.keycloak.entrypoints=web"
       - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
     depends_on:
@@ -99,9 +100,9 @@ services:
       OAUTH2_PROXY_PROVIDER: oidc
       OAUTH2_PROXY_CLIENT_ID: oauth2-proxy-client
       OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_CLIENT_SECRET}
-      OAUTH2_PROXY_OIDC_ISSUER_URL: https://quizlab.techmatrix.it/auth/realms/QuizLab
+      OAUTH2_PROXY_OIDC_ISSUER_URL: https://${DOMAIN}/auth/realms/QuizLab
       OAUTH2_PROXY_COOKIE_SECRET: ${COOKIE_SECRET}
-      OAUTH2_PROXY_REDIRECT_URL: https://quizlab.techmatrix.it/oauth2/callback
+      OAUTH2_PROXY_REDIRECT_URL: https://${DOMAIN}/oauth2/callback
       OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
       OAUTH2_PROXY_EMAIL_DOMAINS: "*"
       OAUTH2_PROXY_UPSTREAMS: static://200                       # Ritorna 200 OK per gli utenti autenticati
@@ -114,7 +115,7 @@ services:
       - auth-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.oauth2.rule=Host(`quizlab.techmatrix.it`) && PathPrefix(`/oauth2/`)"
+      - "traefik.http.routers.oauth2.rule=Host(`${DOMAIN}`) && PathPrefix(`/oauth2/`)"
       - "traefik.http.routers.oauth2.entrypoints=web"
       - "traefik.http.services.oauth2.loadbalancer.server.port=4180"
     depends_on:
@@ -128,7 +129,7 @@ services:
       - gateway-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.landing.rule=Host(`quizlab.techmatrix.it`)"
+      - "traefik.http.routers.landing.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.landing.priority=1" # Priorità minima di fallback per catturare il routing client-side (SPA)
       - "traefik.http.routers.landing.entrypoints=web"
     deploy:
@@ -169,7 +170,7 @@ services:
       - mesh-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api-content.rule=Host(`quizlab.techmatrix.it`) && PathPrefix(`/api/`)"
+      - "traefik.http.routers.api-content.rule=Host(`${DOMAIN}`) && PathPrefix(`/api/`)"
       - "traefik.http.routers.api-content.entrypoints=web"
       - "traefik.http.routers.api-content.middlewares=quiz-auth@file" # Applica il middleware di Forward-Auth
       - "traefik.http.services.api-content.loadbalancer.server.port=3000"

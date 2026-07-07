@@ -10,7 +10,7 @@ const pool = new Pool({
   port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || 'quizlab',
   user: process.env.DB_USER || 'quizlab_user',
-  password: process.env.DB_PASSWORD || 'AppDatabaseSecretPass123!',
+  password: process.env.DB_PASSWORD || 'default_app_db_pass_123',
 });
 
 app.use(express.json());
