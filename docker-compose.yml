@@ -36,8 +36,8 @@ services:
     networks:
       - gateway-net
     ports:
-      - "80:80"        # Porta pubblica di ingresso all'LXC (smistata da Caddy)
-      - "8080:8080"    # Dashboard di Traefik (opzionale, solo interna)
+      - "80:80"        # Porta pubblica di ingresso all'LXC
+      - "8080:8080"    # Dashboard di Traefik
     environment:
       - DOCKER_API_VERSION=1.40
     volumes:
@@ -138,7 +138,7 @@ services:
       OAUTH2_PROXY_UPSTREAMS: static://200                       # Ritorna 200 OK per gli utenti autenticati
       OAUTH2_PROXY_REVERSE_PROXY: "true"                         # Si fida degli header X-Forwarded-* inviati da Traefik
       OAUTH2_PROXY_SET_XAUTHREQUEST: "true"                      # Espone gli header X-Auth-Request-* a Traefik
-      OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL: "true" # Accetta email non verificate per lo sviluppo
+      OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL: "true"  # Accetta email non verificate per lo sviluppo
       OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"                  # Salta la schermata intermedia di OAuth2-Proxy
     networks:
       - gateway-net
@@ -166,7 +166,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 32M # Nginx statico consuma pochissima RAM in runtime
+          memory: 32M
 
   # ==========================================
   # STRATO 3: BUSINESS LOGIC & STORAGE (BACKEND PRIVATE)
@@ -219,8 +219,7 @@ services:
       - DB_NAME=quizlab
       - PORT=3000
     networks:
-      - mesh-net
-    # Totalmente privato: non ha etichette Traefik
+      - mesh-net # Totalmente pirvato
     depends_on:
       - postgres-app
 
