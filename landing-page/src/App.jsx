@@ -36,9 +36,14 @@ export default function App() {
         const data = await response.json();
         setUser(data.userInfo);
         setQuizzes(data.data || []);
-        setCurrentPage('dashboard');
-        // Imposta lo stato iniziale del browser al boot
-        window.history.replaceState({ page: 'dashboard' }, '');
+        
+        // Modifica la pagina solo al caricamento iniziale
+        setCurrentPage(prev => prev === 'loading' ? 'dashboard' : prev);
+        
+        // Imposta lo stato iniziale del browser al boot se non ancora configurato
+        if (!window.history.state) {
+          window.history.replaceState({ page: 'dashboard' }, '');
+        }
       } else {
         setUser(null);
         setCurrentPage('welcome');
