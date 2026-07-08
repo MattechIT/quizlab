@@ -35,6 +35,9 @@ Avvia l'infrastruttura tramite Docker Compose:
 docker compose up -d --build
 ```
 
+### 3. Accesso al sito:
+Per accedere alla piattaforma esiste un utente test specificato nel file: **[realm-export.json](./config/keycloak/realm-export.json)**.
+
 **Cosa succede a cascata all'avvio:**
 1.  **Build dei Sorgenti:** Docker compila l'applicazione SPA del frontend (`landing-page`) all'interno di un web server leggero Nginx e compila le immagini Node.js dei due backend applicativi.
 2.  **Importazione del Realm:** Keycloak importa automaticamente la configurazione base del Realm `QuizLab` definita nel file `realm-export.json`.
