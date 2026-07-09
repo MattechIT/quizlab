@@ -20,14 +20,26 @@ L'infrastruttura è progettata seguendo il principio del **privilegio minimo** e
 
 ---
 
-## 🛠️ Compilazione e Avvio dello Stack (Nativo)
+## 🛠️ Compilazione e Avvio dello Stack
 
 ### 1. Configurazione Iniziale (.env)
 Crea una copia del file di configurazione locale a partire dal modello di esempio:
 ```bash
 cp .env.example .env
 ```
-Apri il file `.env` e configura i parametri reali, come il dominio pubblico (`DOMAIN=quizlab.techmatrix.it`) e le password ad alta sicurezza dei database.
+
+A seconda dell'ambiente in cui intendi eseguire lo stack, configura le variabili nel file `.env` come segue:
+
+| Parametro | Scenario A: Sviluppo Locale (localhost) | Scenario B: Produzione (Dominio Reale) |
+| :--- | :--- | :--- |
+| **`DOMAIN`** | `localhost` (oppure `127.0.0.1`) | `quizlab.techmatrix.it` *(il tuo dominio reale)* |
+| **`SCHEME`** | `http` | `https` |
+
+> [!NOTE]
+> *   **Sviluppo Locale (localhost):** Non è richiesta alcuna cifratura SSL esterna né tunnel.  
+Il sistema si avvia in HTTP semplice su porta 80. Keycloak viene configurato internamente per accettare chiamate non cifrate (`sslRequired: none`) ed `oauth2-proxy` risolve il loopback tramite la mappatura di rete `host-gateway`.
+> *   **Produzione (Dominio):** La sicurezza perimetrale è delegata al reverse proxy esterno.  
+Impostando `SCHEME=https`, le chiamate OIDC di Keycloak e i redirect di autenticazione a monte verranno forzati a viaggiare esclusivamente su canali crittografati HTTPS.
 
 ### 2. Startup e Compilazione Automatica
 Avvia l'infrastruttura tramite Docker Compose:
