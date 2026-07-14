@@ -17,11 +17,13 @@ app.use((req, res, next) => {
 const quizRouter = require('./routes/quiz');
 const statsRouter = require('./routes/stats');
 const flashcardsRouter = require('./routes/flashcards');
+const questionsRouter = require('./routes/questions');
 
 // Montaggio dei moduli sulle rispettive API URL basi
 app.use('/api/v1/quiz', quizRouter);
 app.use('/api/v1/quiz', statsRouter); // Gestisce i percorsi /submit e /history
 app.use('/api/v1/flashcards', flashcardsRouter);
+app.use('/api/v1/questions', questionsRouter);
 
 // Avvio del server
 app.listen(port, () => {

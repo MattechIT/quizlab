@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS quizzes (
     difficulty VARCHAR(50) NOT NULL,
     created_by VARCHAR(255) DEFAULT 'global', -- Identifica l'utente proprietario ('global' o username dello studente)
     description TEXT, -- Descrizione/introduzione opzionale del quiz
-    image_url VARCHAR(500) -- Immagine di copertina opzionale
+    image_url TEXT -- Immagine di copertina opzionale
 );
 
 -- Tabella delle Domande correlate ai Quiz
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS questions (
     options JSONB NOT NULL, -- Array JSON di stringhe con le risposte possibili
     correct_option INT NOT NULL, -- Indice della risposta corretta (0-based)
     explanation TEXT, -- Spiegazione didattica visualizzata in caso di errore
-    image_url VARCHAR(500) -- Immagine didattica opzionale per la domanda
+    image_url TEXT -- Immagine didattica opzionale per la domanda
 );
 
 -- Tabella dei Mazzi di Flashcards
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS flashcards (
     term VARCHAR(255) NOT NULL,
     definition TEXT NOT NULL,
     created_by VARCHAR(255) DEFAULT 'global', -- Identifica il proprietario della flashcard
-    image_url VARCHAR(500) -- Immagine esplicativa sul fronte
+    image_url TEXT -- Immagine esplicativa sul fronte
 );
 
 -- Tabella dello Storico Punteggi (utilizzata dal microservizio api-stats)
