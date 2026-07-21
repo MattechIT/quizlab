@@ -297,11 +297,11 @@ export default function App() {
       <footer style={{ borderTop: '1px solid var(--card-border)', padding: '20px 0', fontSize: '0.85rem', color: 'var(--text-muted)', backgroundColor: '#070707' }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            &copy; 2026 QuizLab Platform. Architettura Didattica Multi-Tier.
+            &copy; 2026 QuizLab Platform. Architettura Didattica Zero-Trust.
           </div>
           <div style={{ display: 'flex', gap: '16px' }}>
             <span>Stato Mesh: <strong style={{ color: 'var(--success)' }}>mTLS Attivo</strong></span>
-            <span>Gateway: <strong>Traefik + Cloudflare</strong></span>
+            <span>Gateway: <strong>Traefik</strong></span>
           </div>
         </div>
       </footer>
